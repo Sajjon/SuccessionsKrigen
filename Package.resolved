@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftSDL",
+        "repositoryURL": "https://github.com/KevinVitale/SwiftSDL",
+        "state": {
+          "branch": "master",
+          "revision": "7cd165a8578428c8ba48a295d755a3b676adf252",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
