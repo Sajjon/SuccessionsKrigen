@@ -73,6 +73,39 @@ public extension AGGFile {
         let data = try dataReader.read(byteCount: fileMetadata.fileSize)
         return data
     }
+    
+    func scalableIcon(id: Int) throws -> Data {
+        /*
+         const Sprite & GetScaledICN( int icnId, uint32_t index )
+               {
+                   const Sprite & originalIcn = _icnVsSprite[icnId][index];
+
+                   if ( Display::DEFAULT_WIDTH == Display::instance().width() && Display::DEFAULT_HEIGHT == Display::instance().height() ) {
+                       return originalIcn;
+                   }
+
+                   if ( _icnVsScaledSprite[icnId].empty() ) {
+                       _icnVsScaledSprite[icnId].resize( _icnVsSprite[icnId].size() );
+                   }
+
+                   Sprite & resizedIcn = _icnVsScaledSprite[icnId][index];
+
+                   const double scaleFactorX = static_cast<double>( Display::instance().width() ) / Display::DEFAULT_WIDTH;
+                   const double scaleFactorY = static_cast<double>( Display::instance().height() ) / Display::DEFAULT_HEIGHT;
+
+                   const int32_t resizedWidth = static_cast<int32_t>( originalIcn.width() * scaleFactorX + 0.5 );
+                   const int32_t resizedHeight = static_cast<int32_t>( originalIcn.height() * scaleFactorY + 0.5 );
+                   // Resize only if needed
+                   if ( resizedIcn.width() != resizedWidth || resizedIcn.height() != resizedHeight ) {
+                       resizedIcn.resize( resizedWidth, resizedHeight );
+                       resizedIcn.setPosition( static_cast<int32_t>( originalIcn.x() * scaleFactorX + 0.5 ), static_cast<int32_t>( originalIcn.y() * scaleFactorY + 0.5 ) );
+                       Resize( originalIcn, resizedIcn, false );
+                   }
+
+                   return resizedIcn;
+               }
+         */
+    }
 }
 
 public extension AGGFile {

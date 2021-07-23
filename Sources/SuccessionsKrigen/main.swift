@@ -1,3 +1,5 @@
 import Foundation
 
-print("Main run")
+
+
+drawMainMenu()
