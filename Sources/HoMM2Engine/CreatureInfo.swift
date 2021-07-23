@@ -13,7 +13,33 @@ public struct CreatureInfo {
 }
 public extension CreatureInfo {
     static let peasant = Self(
-        indexInAggFile: 0,
+        indexInAggFile: 1,
         binFileName: "PEAS_FRM.BIN"
+    )
+    
+    static let archer = Self(
+        indexInAggFile: 2,
+        binFileName: "ARCHRFRM.BIN"
+    )
+    
+    private static let elementalRecordName = "FELEMFRM.BIN"
+    static let earthElement = Self(
+        indexInAggFile: 63,
+        binFileName: elementalRecordName
+    )
+    
+    static let airElement = Self(
+        indexInAggFile: 64,
+        binFileName: elementalRecordName
+    )
+    
+    static let fireElement = Self(
+        indexInAggFile: 65,
+        binFileName: elementalRecordName
+    )
+    
+    static let waterElement = Self(
+        indexInAggFile: 66,
+        binFileName: elementalRecordName
     )
 }
