@@ -6,8 +6,3 @@
 //
 
 import Foundation
-
-public struct Size: Equatable {
-    public let width: Int
-    public let height: Int
-}

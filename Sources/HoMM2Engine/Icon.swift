@@ -6,8 +6,3 @@
 //
 
 import Foundation
-
-public struct Rect: Equatable {
-    public let origin: Point
-    public let size: Size
-}
