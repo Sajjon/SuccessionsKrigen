@@ -8,6 +8,7 @@ let package = Package(
     platforms: [.macOS(.v11)],
     dependencies: [
         .package(name: "SwiftSDL", url: "https://github.com/KevinVitale/SwiftSDL", .branch("master"))
+//        .package(name: "SDL2", url: "https://github.com/ctreffs/SwiftSDL2.git", from: "1.2.0")
     ],
     targets: [
         .target(
@@ -19,6 +20,7 @@ let package = Package(
             dependencies: [
                 "HoMM2Engine",
                 .product(name: "SwiftSDL2", package: "SwiftSDL")
+//                "SDL2"
             ]),
         .testTarget(
             name: "HoMM2EngineTests",

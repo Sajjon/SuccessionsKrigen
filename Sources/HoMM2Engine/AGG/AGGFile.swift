@@ -42,7 +42,8 @@ public struct AGGFile {
         let nameEntriesData = try dataReader.read(byteCount: nameEntriesSize)
         let nameEntries = DataReader(data: nameEntriesData)
 
-        for _ in 0..<numberOfRecords {
+        var ctr = 0
+        for index in 0..<numberOfRecords {
             let nameData = try nameEntries.read(byteCount: Self.maxFilenameSize)
             guard let namePadded = String(data: nameData, encoding: .ascii) else { throw Error.failedToParseFileName }
             let name = String(namePadded.prefix(while: { guard let asciiValue = $0.asciiValue, asciiValue > 0 else { return false }; return true }))
@@ -53,14 +54,24 @@ public struct AGGFile {
             let fileOffset = try fileEntries.readUInt32()
             let fileSize = try fileEntries.readUInt32()
             files[name] = (fileSize: Int(fileSize), fileOffset: Int(fileOffset))
+            if name.contains(".BMP") && ctr < 100 {
+                ctr += 1
+                print("name: \(name)")
+            }
         }
+        
 
         self.files = files
     }
 }
 
 
+let defaultDataDirectoryPath = "/Users/sajjon/Developer/Fun/Games/HoMM/HoMM_2_Gold_GAME_FILES/DATA"
 public extension AGGFile {
+    static let defaultFileNameHeroes2 = "heroes2.agg"
+    static let defaultFilePathHeroes2 = "\(defaultDataDirectoryPath)/\(Self.defaultFileNameHeroes2)"
+    static let heroes2 = try! Self(path: Self.defaultFilePathHeroes2)
+    
     /// 8.3 ASCIIZ file name + 2-bytes padding
     static let maxFilenameSize =  15
     
@@ -105,6 +116,7 @@ public extension AGGFile {
                    return resizedIcn;
                }
          */
+        fatalError()
     }
 }
 

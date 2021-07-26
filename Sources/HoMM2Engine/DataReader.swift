@@ -54,6 +54,10 @@ public extension DataReader {
         case outOfBounds
     }
     
+    func readUInt8(endianess: Endianess = .little) throws -> UInt8 {
+        try readUInt(byteCount: 1, endianess: endianess)
+    }
+    
     func readUInt16(endianess: Endianess = .little) throws -> UInt16 {
         try readUInt(byteCount: 2, endianess: endianess)
     }
