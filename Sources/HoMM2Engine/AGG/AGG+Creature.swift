@@ -17,7 +17,42 @@ public extension AGGFile {
         }
         
     }
+    
+    func Info(creature: Creature) -> Creature.Info {
+        let parser = CreatureInfoParser()
+        let data = dataFor(creature: creature)
+        do {
+            let info = try parser.parse(data: data, creatureType: creature)
+            return info
+        } catch {
+            fatalError("Unexpected error while reading and parsing creature info for creature: \(creature), underlying error: \(error)")
+        }
+    }
+    
+    func animationReference(creature: Creature) -> AnimationReference {
+        let creatureInfo = Info(creature: creature)
+        let builder = AnimationReference.Builder()
+        
+        do {
+          let animationReference = try builder.build(creatureInfo: creatureInfo)
+            return animationReference
+        } catch {
+            fatalError("Unexpected error while reading and parsing animation reference for creature: \(creature), underlying error: \(error)")
+        }
+        
+        
+    }
 }
+
+
+public enum GUI {
+    public enum BattleField {
+        public enum Cell {
+            public static let width = 44
+        }
+    }
+}
+
 
 private extension Creature {
     var nameOfRecordInAggFile: String {
@@ -28,6 +63,33 @@ private extension Creature {
         case .earthElemental: fallthrough
         case .fireElemental: fallthrough
         case .waterElemental: return "FELEMFRM.BIN"
+        default: fatalError("Creature not supported yet")
         }
     }
 }
+
+
+/*
+ MonsterAnimInfo MonsterAnimCache::getAnimInfo( int monsterID )
+ {
+ std::map<int, MonsterAnimInfo>::iterator mapIterator = _animMap.find( monsterID );
+ if ( mapIterator != _animMap.end() ) {
+ return mapIterator->second;
+ }
+ else {
+ auto fileName = Bin_Info::GetFilename( monsterID );
+ auto monsterInfoBin = AGG::LoadBINFRM( fileName );
+ const MonsterAnimInfo info( monsterID, monsterInfoBin );
+ if ( info.isValid() ) {
+ _animMap[monsterID] = info;
+ return info;
+ }
+ else {
+ DEBUG_LOG( DBG_ENGINE, DBG_WARN, "missing BIN FRM data: " << Bin_Info::GetFilename( monsterID ) << ", index: " << monsterID );
+ }
+ 
+ 
+ }
+ return MonsterAnimInfo();
+ }
+ */

@@ -10,7 +10,7 @@ import Foundation
 public extension AGGFile {
     func dataFor(icon: Icon) -> Data {
         do {
-            let data = try read(fileName: icon.rawValue)
+            let data = try read(fileName: icon.iconFileName)
             return data
         } catch {
             fatalError("Unexpected error while reading icon data in AGG file for icon: \(icon), underlying error: \(error)")
@@ -18,3 +18,4 @@ public extension AGGFile {
         
     }
 }
+
