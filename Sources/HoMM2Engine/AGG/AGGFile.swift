@@ -6,7 +6,21 @@
 //
 
 import Foundation
+import CryptoKit
 
+public func sha256Hex(data: Data) -> String {
+    var hasher = SHA256()
+    hasher.update(data: data)
+    return Data(hasher.finalize()).hexDescription
+}
+
+public func printSha256(data: Data, label: String = "", if condition: @autoclosure () -> Bool = { true }()) {
+    let description = label.isEmpty ? "" : "(\(label))"
+    let hashHex = sha256Hex(data: data)
+    if condition() {
+        print("SHA256 \(description): \(hashHex)")
+    }
+}
 
 public struct AGGFile {
     
@@ -178,6 +192,14 @@ public extension AGGFile.SpriteCache {
         sprites[icon.rawValue][creature.rawValue]
     }
     
+    func _spriteFor(icon: Icon, index: Int) -> Sprite {
+        sprites[icon.rawValue][index]
+    }
+    
+    func _spritesFor(icon: Icon) -> [Sprite] {
+        sprites[icon.rawValue]
+    }
+    
     func add(sprites: [Sprite], forIcon icon: Icon) {
         self.sprites[icon.rawValue] = sprites
     }
@@ -209,155 +231,166 @@ private extension DataReader {
     }
 }
 
-
-extension Int {
-    var data: Data {
-        var int = self
-        return Data(bytes: &int, count: MemoryLayout<Int>.size)
-    }
-}
-
-extension UInt8 {
-    var data: Data {
-        var int = self
-        return Data(bytes: &int, count: MemoryLayout<UInt8>.size)
-    }
-}
-
-extension UInt16 {
-    var data: Data {
-        var int = self
-        return Data(bytes: &int, count: MemoryLayout<UInt16>.size)
-    }
-}
-
-extension UInt32 {
-    var data: Data {
-        var int = self
-        return Data(bytes: &int, count: MemoryLayout<UInt32>.size)
-    }
-    
-    var byteArrayLittleEndian: [UInt8] {
-        return [
-            UInt8((self & 0xFF000000) >> 24),
-            UInt8((self & 0x00FF0000) >> 16),
-            UInt8((self & 0x0000FF00) >> 8),
-            UInt8(self & 0x000000FF)
-        ]
-    }
-}
-
 public struct SpriteDecoder {}
 public extension SpriteDecoder {
 
     func decodeSprite(
-        data: Data,
-        width: Int,
-        height: Int,
-        offsetX: Int,
-        offsetY: Int
+        data rawData: Data,
+        width: Int32,
+        height: Int32,
+        offsetX: Int16,
+        offsetY: Int16
     ) throws -> Sprite {
         
-        var imageData = Data()
-        var imageTransform = Data()
-     
-        /*
-         Sprite decodeICNSprite( const uint8_t * data, uint32_t sizeData, const int32_t width, const int32_t height, const int16_t offsetX, const int16_t offsetY )
-             {
-                 Sprite sprite( width, height, offsetX, offsetY );
-                 sprite.reset();
-
-                 uint8_t * imageData = sprite.image();
-                 uint8_t * imageTransform = sprite.transform();
-
-                 uint32_t posX = 0;
-
-                 const uint8_t * dataEnd = data + sizeData;
-*/
         
-        let dataSize = data.count
-        var index = 0
-//        let dataReader = DataReader(data: data)
-        var posX: UInt32 = 0
+     
+        let totalPixelCount = Int(width * height)
+        var imageData = Data(repeating: 0, count: totalPixelCount)
+        var imageTransform = Data(repeating: 1, count: totalPixelCount)
+        
+        
+        printSha256(data: imageData, label: "INITIAL imageData")
+        printSha256(data: imageTransform, label: "INITIAL imageTransform")
+        
+        var rawDataOffset  = 0
+        var imageDataOffset  = 0
+        var imageTransformOffset = 0
+        
+        var posX = 0
+        
+     
         func isAtEndOfData() -> Bool {
-            if index < dataSize - 1 { return false }
-            assert(index == dataSize - 1, "`index` must not be larger than `dataSize - 1`")
+            if rawDataOffset < rawData.count - 1 { return false }
+            assert(rawDataOffset == rawData.count - 1, "`index` must not be larger than `dataSize - 1`")
+            assert(imageDataOffset < totalPixelCount)
+            assert(imageTransformOffset < totalPixelCount)
             return true
         }
+        
+        func read<I>(increment: Bool = true) -> I where I: FixedWidthInteger {
+            let integer = I(rawData[rawDataOffset])
+            if increment {
+                rawDataOffset += 1
+            }
+            return integer
+        }
+        func readInt(increment: Bool = true) -> Int { read(increment: increment) }
+        
+        func setImageData(to imageDataValue: UInt8, andImageTransformTo imageTransformValue: UInt8, incrementPosX: Bool = true) {
+            imageData[imageDataOffset + posX] = imageDataValue
+            imageTransform[imageTransformOffset + posX] = imageTransformValue
+            if incrementPosX {
+                posX += 1
+            }
+        }
+        
+        var counter = 0
+        let counterThresholdMin = 0
+        let counterThresholdMax = 40
+        assert(counterThresholdMax >= counterThresholdMin)
+        
+        func canPrint() -> Bool {
+            counter >= counterThresholdMin && counter < counterThresholdMax && rawData.count == 5473
+        }
+        
+//        var target = 1
+        
+        func doPrint(_ msg: String) {
+           guard canPrint() else { return }
+            print("iteration \(counter): \(msg)")
+        }
+        
+        
         while true {
-//            let byte = try dataReader.readUInt8()
-            if data[index] == 0 { // 0x00: end of row
-                imageData.append(width.data)
-                imageTransform.append(width.data)
+            defer { counter += 1 }
+            if isAtEndOfData() {
+                print("🚀 end of data")
+                break
+            }
+
+            if 0 == read(increment: false) { // 0x00: end of row
+                doPrint("scope 0")
+                imageDataOffset += Int(width)
+                imageTransformOffset += Int(width)
                 posX = 0
-                index += 1
-            } else if data[index] < 0x80 {  // 0x01-0x7F: repeat a pixel N times
-                var pixelCount = Int(data[index])
-                index += 1
+                rawDataOffset += 1
+            } else if 0x80 > read(increment: false) {  // 0x01-0x7F: repeat a pixel N times
+                doPrint("scope 1")
+                var pixelCount: UInt32 = read() //Int(rawData[rawDataOffset])
                 while pixelCount > 0 && !isAtEndOfData() {
-                    imageData[Int(posX)] = data[index]
-                    imageTransform[Int(posX)] = 0
-                    posX += 1
-                    index += 1
+                    setImageData(to: read(), andImageTransformTo: 0)
                     pixelCount -= 1
                 }
-            } else if data[index] == 0x80 { // 0x80: end of image
+            } else if 0x80 == read(increment: false) { // 0x80: end of image
+                doPrint("scope 2 BREAK END OF IMAGE")
                 break
-            } else if data[index] < 0xC0 { // 0xBF: empty (transparent) pixels
-                posX += UInt32(data[index]) - 0x80
-                index += 1
-            } else if data[index] == 0xC0 {  // 0xC0: transform layer
-                index += 1
-                let transformValue = data[index]
+            } else if 0xC0 > read(increment: false) { // 0xBF: empty (transparent) pixels
+                doPrint("scope 3 empty pixels")
+                posX += read() - 0x80
+            } else if 0xC0 == read(increment: false) {  // 0xC0: transform layer
+                rawDataOffset += 1
+                doPrint("scope 4 transform layer")
+                let transformValue: UInt8 = read(increment: false)
                 let transformType = ((transformValue & 0x3C << 6) / 255 + 2) // `1` is for skipping
-                var pixelCount = data[index] % 4
+                var pixelCount: UInt32 = read(increment: false) % 4
                 if pixelCount == 0 {
-                    index += 1
-                    pixelCount = data[index]
+                    rawDataOffset += 1
+                    pixelCount = read(increment: false)
                 }
                 
                 if (transformValue & 0x40 != 0) && transformType <= 15 {
                     while pixelCount > 0 {
-                        imageTransform[Int(posX)] = transformType
+                        imageTransform[imageTransformOffset + posX] = transformType
                         posX += 1
                         pixelCount -= 1
                     }
                 } else {
-                    posX += UInt32(pixelCount)
+                    posX += Int(pixelCount)
                 }
                 
-                index += 1
-            } else if data[index] == 0xC1 {
-                index += 1
-                var pixelCount = data[index]
-                index += 1
+                rawDataOffset += 1
+            } else if 0xC1 == read(increment: false) {
+                rawDataOffset += 1
+                doPrint("scope 5 C1")
+                var pixelCount: UInt32 = read()
                 while pixelCount > 0 {
-                    imageData[Int(posX)] = data[index]
-                    imageTransform[Int(posX)] = 0
-                    posX += 1
+                    setImageData(to: read(increment: false), andImageTransformTo: 0)
                     pixelCount -= 1
                 }
-                index += 1
+                rawDataOffset += 1
             } else {
-                var pixelCount = data[index] - 0xC0
-                index += 1
+                doPrint("scope 6 LAST (else)")
+                let pixelCountBase = Int((read() as UInt32))
+                var pixelCount = abs(pixelCountBase - 0xC0)
+                if counter == 186 {
+                    print("datavalue: \(pixelCountBase)")
+                    print("pixelCount: \(pixelCount)")
+                }
                 while pixelCount > 0 {
-                    imageData[Int(posX)] = data[index]
-                    imageTransform[Int(posX)] = 0
-                    posX += 1
+                    setImageData(to: read(increment: false), andImageTransformTo: 0)
                     pixelCount -= 1
                 }
-                index += 1
+                rawDataOffset += 1
             }
             
-            if index >= dataSize - 1 {
-                break
+//            printSha256(data: imageData, label: "PARTIAL imageData", if: canPrint())
+            
+            
+            if counter >= counterThresholdMin && counter < counterThresholdMax {
+//            if counter == target {
+//                target *= 2
+                let hexOfHashOfImageData = sha256Hex(data: imageData)
+                print("i=\(counter) => \(hexOfHashOfImageData), rawDataOffset: \(rawDataOffset)")
             }
+//            printSha256(data: imageTransform, label: "PARTIAL imageTransform", if: canPrint())
         }
+        
+        printSha256(data: imageData, label: "FINAL imageData")
+        printSha256(data: imageTransform, label: "FINAL imageTransform")
  
         return  .init(
-            width: width, height: height,
-            offsetX: offsetX, offsetY: offsetY,
+            width: .init(width), height: .init(height),
+            offsetX: .init(offsetX), offsetY: .init(offsetY),
             imageData: imageData,
             imageTransform: imageTransform
         )
@@ -373,12 +406,16 @@ private extension AGGFile {
     
     /// "LoadOriginalICN"
     func loadOriginal(icon: Icon) throws {
-        let body = try read(fileName: icon.iconFileName)
+        let fileName = icon.iconFileName
+        let body = try read(fileName: fileName)
+        print("🔮👤 LoadOriginalICN ICN::GetString( id ): \(fileName), body.size(): \(body.count), sha256(body): \(sha256Hex(data: body))")
         let dataReader = DataReader(data: body)
         
         let count = Int(try dataReader.readUInt16())
         let blockSize = try dataReader.readUInt32()
         guard count > 0, blockSize > 0 else { throw Error.failedToLoadImageSprite }
+        
+        print("🔮 LoadOriginalICN count: \(count)")
         
         let sprites: [Sprite] = try (0..<count).map { i throws -> Sprite in
             try dataReader.seek(to: Self.headerSize + i * 13)
@@ -390,12 +427,15 @@ private extension AGGFile {
             } else {
                 sizeData = blockSize - header1.offsetData
             }
-            var data = Data()
-            data.append(body)
-            data.append(Self.headerSize.data)
-            data.append(header1.offsetData.data)
+//            var data = Data()
+//            data.append(body)
+//            data.append(Self.headerSize.data)
+//            data.append(header1.offsetData.data)
+            let data = Data(body.suffix(from: Self.headerSize + Int(header1.offsetData)))
             
-            assert(data.count == sizeData, "data.count \(data.count) != sizeData \(sizeData)") // else drop
+            assert(data.count == sizeData)
+            print("🔮 LoadOriginalICN i: \(i), sizeData: \(sizeData), width: \(header1.width), height: \(header1.height), offsetX: \(header1.offsetX), offsetY: \(header1.offsetY), sha256(data): \(sha256Hex(data: data))")
+
             
             let spriteDecoder = SpriteDecoder()
             let sprite = try spriteDecoder.decodeSprite(
@@ -500,6 +540,15 @@ private extension AGGFile {
 }
 
 public extension AGGFile {
+    
+    func phoenixIcon() -> Sprite {
+        let icon = Icon.MONH0028
+        try! loadOriginal(icon: icon)
+        let sprites = spriteCache._spritesFor(icon: icon)
+        assert(sprites.count == 1)
+        return sprites[0]
+//        return spriteCache._spriteFor(icon: icon, index: 0)
+    }
     
     func spriteFor(creature: Creature) throws -> Sprite {
         try spriteFor(icon: .allCreatures, creature: creature)

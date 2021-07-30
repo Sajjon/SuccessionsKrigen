@@ -118,12 +118,7 @@ func testSDL() {
 //        fatalError("Failed to create image texture from image.")
 //    }
     
-    let sprite: Sprite
-    do {
-        sprite = try heroes2AggFile.spriteFor(creature: .peasant)
-    } catch {
-        fatalError("heroes2AggFile.spriteFor fail: \(error)")
-    }
+    let sprite = heroes2AggFile.phoenixIcon()
     
     guard
         let texture = textureFromSprite(sprite, renderer: renderer) else {
