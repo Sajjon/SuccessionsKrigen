@@ -117,7 +117,16 @@ public extension AGGFile {
 public struct Size: Equatable {
     public let width: Int
     public let height: Int
+    public init(width: Int, height: Int) {
+        self.width = width
+        self.height = height
+    }
 }
+
+public extension Size {
+    static let zero = Self(width: 0, height: 0)
+}
+
 
 public struct Sprite {
     public let icon: Icon
@@ -496,13 +505,11 @@ private extension AGGFile {
 
 public extension AGGFile {
     
-    func phoenixIcon() -> Sprite {
-        let icon = Icon.MONH0028
+    func smallSpriteForCreature(_ icon: Icon) -> Sprite {
         try! loadOriginal(icon: icon)
         let sprites = spriteCache._spritesFor(icon: icon)
         assert(sprites.count == 1)
         return sprites[0]
-//        return spriteCache._spriteFor(icon: icon, index: 0)
     }
     
     func spriteFor(creature: Creature) throws -> Sprite {

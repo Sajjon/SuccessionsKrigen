@@ -28,6 +28,8 @@ public extension Icon {
 
     // Image files for all creatues ("MONS32")
     static let allCreatures = MONS32
+    
+    static let phoenixSmall = MONH0028
 }
 
 

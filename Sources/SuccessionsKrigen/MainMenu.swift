@@ -119,25 +119,7 @@ private func drawMainMenuScreen(aggFile: AGGFile) {
             }
         }
         // === CHECK IF QUIT end
-        var sourceRect = SDL_Rect(x: 0, y: 0, w: width, h: height)
-        var destinationRect = SDL_Rect(x: 0, y: 0, w: width, h: height)
-//        SDL_UpperBlitScaled(canvas, nil, windowSurface,
-//        SDL_UpperBlit(canvas, &sourceRect, windowSurface, (&)
-        
-//        SDL_LowerBlit(canvas, nil, windowSurface, &rect)
-//        SDL_UpdateWindowSurface(window)
 
-        // $$$ METAL start
-//        let renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC.rawValue)
-//
-//        guard let layerPointer = SDL_RenderGetMetalLayer(renderer) else {
-//            fatalError("could not get metal layer from renderer")
-//        }
-//
-//        let layer: CAMetalLayer = unsafeBitCast(layerPointer, to: CAMetalLayer.self)
-
-        // $$$ METAL end
-        
         
         SDL_Delay(100)
         print(".", separator: "", terminator: "")
