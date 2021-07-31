@@ -183,7 +183,7 @@ extension FixedWidthInteger {
     }
 }
 
-func generatePixelsFromColoredDots(width: Int32, height: Int32, pixelsPerDot: Int32) -> [UInt32] {
+func generatePixelsFromColoredDots(width: Int32, height: Int32) -> [UInt32] {
     let pixelCount = Int(width * height)
     var pixels: [UInt32] = .init(repeating: 0xffffff, count: pixelCount)
     
@@ -225,10 +225,10 @@ func testSDL() {
     let pitch = windowSurfaceBase.pointee.pitch
     SDL_FreeSurface(windowSurfaceBase)
     
-    var pixels: [UInt32] = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
+    var pixels: [UInt32] = .init(repeating: 0xffffffff, count: Int(width*height))
     func drawRandomPixels() {
         print(".", terminator: "")
-        pixels = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
+        pixels = generatePixelsFromColoredDots(width: width, height: height)
         pixels.withUnsafeMutableBytes {
             let pixelPointer: UnsafeMutableRawPointer = $0.baseAddress!
             guard let rgbSurface = SDL_CreateRGBSurfaceWithFormatFrom(pixelPointer, width, height, 32, pitch, SDL_PIXELFORMAT_RGBA8888.rawValue) else {
@@ -258,7 +258,7 @@ func testSDL() {
     var e: SDL_Event = SDL_Event(type: 1)
     var quit = false
     
-    drawRandomPixels()
+    doDrawRandomPixels()
     
     while !quit {
         while SDL_PollEvent(&e) != 0 {
