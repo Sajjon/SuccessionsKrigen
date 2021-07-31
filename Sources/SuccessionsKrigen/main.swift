@@ -23,6 +23,62 @@ private func sdlFatalError(reason: String, _ line: UInt = #line) -> Never {
     fatalError(errorMessage, line: line)
 }
 
+struct ColorRGB {
+    typealias Value = UInt8
+    let red: Value
+    let blue: Value
+    let green: Value
+    let alpha: Value
+}
+
+func mutateTexturePixels(texture: OpaquePointer, pixelColor: ColorRGB, position: Point) {
+    // Get the size of the texture.
+    var format: UInt32 = 0
+    var pitch: Int32 = 0
+    var width: Int32 = 0
+    var height: Int32 = 0
+    var access: Int32 = 0
+    SDL_QueryTexture(texture, &format, &access, &width, &height)
+    guard access == SDL_TEXTUREACCESS_STREAMING.rawValue else {
+        fatalError("Must be SDL_TEXTUREACCESS_STREAMING")
+    }
+    
+    // Now let's make our "pixels" pointer point to the texture data.
+    var pixelFormat = SDL_PixelFormat()
+    pixelFormat.format = format
+//    print("pixelFormat.BytesPerPixel: \(pixelFormat.BytesPerPixel)")
+    // Now you want to format the color to a correct format that SDL can use.
+    // Basically we convert our RGB color to a hex-like BGR color.
+    var color = SDL_MapRGB(&pixelFormat, pixelColor.red, pixelColor.green, pixelColor.blue)
+    // Before setting the color, we need to know where we have to place it.
+    let pixelOffset = position.y * (Int(pitch)) + (position.x + MemoryLayout<UInt32>.size)
+    let pixelCount = Int(width * height)
+
+    
+    var pixels = [UInt32](repeating: 0, count: pixelCount)
+    let rawPointer: UnsafeMutableRawPointer = pixels.withUnsafeMutableBytes { $0.baseAddress! }
+    let opaquePointer = OpaquePointer(rawPointer)
+    
+    let pixelPointer = UnsafeMutablePointer<UnsafeMutableRawPointer?>(opaquePointer)
+
+    guard SDL_LockTexture(texture, nil /* rect */, pixelPointer, &pitch) == 0 else {
+        fatalError(sdlError(prefix: "SDL_LockTexture failed"))
+    }
+    defer {
+        // Also don't forget to unlock your texture once you're done.
+        SDL_UnlockTexture(texture)
+    }
+
+    // Now we can set the pixel(s) we want.
+    let pixelPointerOffsetted = pixelPointer + pixelOffset
+//    let colorPointer = UnsafePointer(&color)
+    pixelPointerOffsetted.withMemoryRebound(to: UInt32.self, capacity: 1) {
+        $0.assign(from: &color, count: 1)
+    }
+//    pixelPointer.assign(from: colorPointer, count: 1)
+
+}
+
 
 func textureFromImage(data imageData: Data, isBMP: Bool = false, renderer: OpaquePointer) -> OpaquePointer? {
     let imageDataSize = Int32(imageData.count)
@@ -43,6 +99,7 @@ func textureFromImage(data imageData: Data, isBMP: Bool = false, renderer: Opaqu
             return IMG_Load_RW(source, 1 /* `1` indicates that the stream will be closed after read */)
         }
     }
+    
     
     
     guard
@@ -109,55 +166,32 @@ func draw(sprite: Sprite, renderer: OpaquePointer) {
      */
 }
 
-func drawRectangles(renderer: OpaquePointer, purpleAlpha: inout UInt8) {
-   
-    let size: Int32 = 70
-    var textures: [OpaquePointer] = []
-    func createTexture() -> OpaquePointer {
-         let texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888.rawValue, .init(SDL_TEXTUREACCESS_TARGET.rawValue), size, size)!
-        textures.append(texture)
-        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND)
-        return texture
-    }
+func createTextureWithRenderer(
+    _ renderer: OpaquePointer,
+    size: Size,// = .init(width: 70, height: 70),
+    access: SDL_TextureAccess = SDL_TEXTUREACCESS_TARGET
+) -> OpaquePointer {
     
-    func fillTexture(_ texture: OpaquePointer, red: UInt8 = 0, green: UInt8 = 0, blue: UInt8 = 0, alpha: UInt8 = 255) {
-        SDL_SetRenderTarget(renderer, texture)
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
-        SDL_SetRenderDrawColor(renderer, red, green, blue, alpha)
-        SDL_RenderFillRect(renderer, nil)
-    }
-    
-    let redTexture = createTexture()
-    let greenTexture = createTexture()
-    let purpleTexture = createTexture()
-    
-    fillTexture(redTexture, red: 255)
-    fillTexture(greenTexture, green: 255, alpha: 128)
-    fillTexture(purpleTexture, red: 255, blue: 255, alpha: purpleAlpha)
-    
-    func prepareForRendering(renderer r: OpaquePointer)
-    {
-        SDL_SetRenderTarget(r, nil)
-        SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND)
-        SDL_SetRenderDrawColor(r, 128, 128, 128, 255)
-    }
-    
-    prepareForRendering(renderer: renderer)
-    
-    var rect = SDL_Rect(x: 0, y: 0, w: size, h: size)
+    let texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888.rawValue, .init(access.rawValue), Int32(size.width), Int32(size.height))!
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND)
+    return texture
+}
 
-    func copyTextureToRenderer(texture: OpaquePointer, withOffset offset: Int32) {
-        rect.x = offset
-        rect.y = offset
-        SDL_RenderCopy(renderer, texture, nil, &rect)
+extension FixedWidthInteger {
+    static func random() -> Self {
+        return Self.random(in: 0..<Self.max)
+    }
+}
+
+func generatePixelsFromColoredDots(width: Int32, height: Int32, pixelsPerDot: Int32) -> [UInt32] {
+    let pixelCount = Int(width * height)
+    var pixels: [UInt32] = .init(repeating: 0xffffff, count: pixelCount)
+    
+    for index in 0..<pixelCount {
+        pixels[index] = .random()
     }
     
-    var offset: Int32 = 20
-    textures.forEach { texture in
-        copyTextureToRenderer(texture: texture, withOffset: offset)
-        offset += (20 + size)
-        SDL_DestroyTexture(texture)
-    }
+    return pixels
 }
 
 func testSDL() {
@@ -168,38 +202,66 @@ func testSDL() {
     }
     
     /* Create a Window */
-    guard let window = SDL_CreateWindow("Hello World", 0, 0, 640, 480, SDL_WINDOW_SHOWN.rawValue) else {
+    let width: Int32 = 640
+    let height: Int32 = 480
+    guard let window = SDL_CreateWindow("Hello World", 0, 0, width, height, SDL_WINDOW_SHOWN.rawValue) else {
         sdlFatalError(reason: "Create Window failed")
     }
     
     /* Create a renderer */
-    guard let renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED.rawValue | SDL_RENDERER_PRESENTVSYNC.rawValue) else {
+    let flags = SDL_RENDERER_SOFTWARE.rawValue // SDL_RENDERER_ACCELERATED.rawValue | SDL_RENDERER_PRESENTVSYNC.rawValue
+    guard let renderer = SDL_CreateRenderer(window, -1, flags) else {
         sdlFatalError(reason: "Create Renderer failed")
     }
-
     
-//    guard let windowSurface = SDL_GetWindowSurface(window) else {
-//        sdlFatalError(reason: "SDL_GetWindowSurface failed")
-//    }
-//    print("windowSurface height: \(windowSurface.pointee.h)")
-//    print("windowSurface width: \(windowSurface.pointee.w)")
-    
-    
-//    let heroes2AggFile = AGGFile.heroes2
-//    let sprite = heroes2AggFile.smallSpriteForCreature(.phoenixSmall)
-    
-    var purpleAlpha: UInt8 = 10
-    
-    func doDrawRectangles() {
-        SDL_RenderClear(renderer)
-        drawRectangles(renderer: renderer, purpleAlpha: &purpleAlpha)
-        SDL_RenderPresent(renderer) // Show renderer on window
+    var rendererInfo = SDL_RendererInfo()
+    guard SDL_GetRendererInfo(renderer, &rendererInfo) == 0 else {
+        sdlFatalError(reason: "GetRendererInfo failed")
     }
     
-    doDrawRectangles()
+    guard let windowSurfaceBase = SDL_GetWindowSurface(window) else {
+        sdlFatalError(reason: "SDL_GetWindowSurface failed")
+    }
+    let windowSurface = windowSurfaceBase.pointee
+    let pitch = windowSurface.pitch
+    print("pitch: \(pitch)")
+    
+    
+    func drawRandomPixels() {
+        print(".", terminator: "")
+        var pixels: [UInt32] = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
+        
+        let rgbSurfaceBase: UnsafeMutablePointer<SDL_Surface> = pixels.withUnsafeMutableBytes {
+            let pixelPointer: UnsafeMutableRawPointer = $0.baseAddress!
+            guard let rgbSurface = SDL_CreateRGBSurfaceWithFormatFrom(pixelPointer, width, height, 32, pitch, SDL_PIXELFORMAT_RGBA8888.rawValue) else {
+                sdlFatalError(reason: "SDL_CreateRGBSurfaceWithFormatFrom failed")
+            }
+            return rgbSurface
+        }
+        
+        guard let textureWithPixels = SDL_CreateTextureFromSurface(renderer, rgbSurfaceBase) else {
+            sdlFatalError(reason: "SDL_CreateTextureFromSurface failed")
+        }
+        SDL_RenderCopy(renderer, textureWithPixels, nil, nil)
+        SDL_DestroyTexture(textureWithPixels)
+        SDL_FreeSurface(rgbSurfaceBase)
+    }
+    
+    
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255)
+    SDL_RenderClear(renderer)
+    SDL_RenderPresent(renderer)
+    
+    func doDrawRandomPixels() {
+        SDL_RenderClear(renderer)
+        drawRandomPixels()
+        SDL_RenderPresent(renderer)
+    }
     
     var e: SDL_Event = SDL_Event(type: 1)
     var quit = false
+    
+    doDrawRandomPixels()
     
     
     while !quit {
@@ -209,35 +271,21 @@ func testSDL() {
             }
             
             if e.type == SDL_KEYDOWN.rawValue {
+                        SDL_RenderClear(renderer)
+                defer { SDL_RenderPresent(renderer) } // Show renderer on window
                 if e.key.keysym.sym == SDLK_q.rawValue {
                     print("Did press Quit ('Q' key)")
                     quit = true
-                } else if e.key.keysym.sym == SDLK_i.rawValue {
-                    purpleAlpha += 1
-                    print("purpleAlpha: \(purpleAlpha)")
-                    doDrawRectangles()
-//                    draw(sprite: sprite, renderer: renderer, purpleAlpha: &purpleAlpha)
-                } else if e.key.keysym.sym == SDLK_d.rawValue {
-                    if purpleAlpha > 0 {
-                        purpleAlpha -= 1
-                        print("purpleAlpha: \(purpleAlpha)")
-                        doDrawRectangles()
-//                        draw(sprite: sprite, renderer: renderer, purpleAlpha: &purpleAlpha)
-                    }
-                    
+                } else {
+                    doDrawRandomPixels()
                 }
-                
             }
             
-            if e.type == SDL_MOUSEBUTTONDOWN.rawValue {
-                quit = true
-            }
          
         }
     }
     
     /* Free all objects*/
-//    SDL_DestroyTexture(texture)
     SDL_DestroyRenderer(renderer)
     SDL_DestroyWindow(window)
     
