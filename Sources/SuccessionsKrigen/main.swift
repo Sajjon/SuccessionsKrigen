@@ -222,29 +222,26 @@ func testSDL() {
     guard let windowSurfaceBase = SDL_GetWindowSurface(window) else {
         sdlFatalError(reason: "SDL_GetWindowSurface failed")
     }
-    let windowSurface = windowSurfaceBase.pointee
-    let pitch = windowSurface.pitch
-    print("pitch: \(pitch)")
+    let pitch = windowSurfaceBase.pointee.pitch
+    SDL_FreeSurface(windowSurfaceBase)
     
-    
+    var pixels: [UInt32] = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
     func drawRandomPixels() {
         print(".", terminator: "")
-        var pixels: [UInt32] = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
-        
-        let rgbSurfaceBase: UnsafeMutablePointer<SDL_Surface> = pixels.withUnsafeMutableBytes {
+        pixels = generatePixelsFromColoredDots(width: width, height: height, pixelsPerDot: 8)
+        pixels.withUnsafeMutableBytes {
             let pixelPointer: UnsafeMutableRawPointer = $0.baseAddress!
             guard let rgbSurface = SDL_CreateRGBSurfaceWithFormatFrom(pixelPointer, width, height, 32, pitch, SDL_PIXELFORMAT_RGBA8888.rawValue) else {
                 sdlFatalError(reason: "SDL_CreateRGBSurfaceWithFormatFrom failed")
             }
-            return rgbSurface
+            guard let textureWithPixels = SDL_CreateTextureFromSurface(renderer, rgbSurface) else {
+                sdlFatalError(reason: "SDL_CreateTextureFromSurface failed")
+            }
+            SDL_RenderCopy(renderer, textureWithPixels, nil, nil)
+            SDL_DestroyTexture(textureWithPixels)
+            SDL_FreeSurface(rgbSurface)
         }
         
-        guard let textureWithPixels = SDL_CreateTextureFromSurface(renderer, rgbSurfaceBase) else {
-            sdlFatalError(reason: "SDL_CreateTextureFromSurface failed")
-        }
-        SDL_RenderCopy(renderer, textureWithPixels, nil, nil)
-        SDL_DestroyTexture(textureWithPixels)
-        SDL_FreeSurface(rgbSurfaceBase)
     }
     
     
@@ -261,8 +258,7 @@ func testSDL() {
     var e: SDL_Event = SDL_Event(type: 1)
     var quit = false
     
-    doDrawRandomPixels()
-    
+    drawRandomPixels()
     
     while !quit {
         while SDL_PollEvent(&e) != 0 {
