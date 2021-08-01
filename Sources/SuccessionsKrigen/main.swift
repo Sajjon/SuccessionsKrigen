@@ -294,7 +294,7 @@ func generatePalette(
         let green = getValue()
         let blue = getValue()
         let format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888.rawValue)
-        let color = surfaceSupportsAlpha ? SDL_MapRGBA(format, red, green, blue, 255) : SDL_MapRGB(format, red, green, blue)
+        let color = surfaceSupportsAlpha ? SDL_MapRGBA(format, red, green, blue, 255 /* Palette does not contain alpha info. Always use 255 */) : SDL_MapRGB(format, red, green, blue)
         SDL_FreeFormat(format)
         palette32Bit[i] = color
     }
