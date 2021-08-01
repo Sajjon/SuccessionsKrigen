@@ -128,6 +128,26 @@ public extension Size {
 }
 
 
+public struct Rect {
+    public let size: Size
+    public let origin: Point
+    
+    public init(size: Size, origin: Point = .zero) {
+        self.size = size
+        self.origin = origin
+    }
+    
+    public init<I>(width: I, height: I) where I: FixedWidthInteger {
+        self.init(
+            size: .init(
+                width: .init(width),
+                height: .init(height)
+            ),
+            origin: .zero
+        )
+    }
+}
+
 public struct Sprite {
     public let icon: Icon
     public let size: Size

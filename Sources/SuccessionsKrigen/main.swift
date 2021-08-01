@@ -200,48 +200,99 @@ extension FixedWidthInteger {
     }
 }
 
-let standardPaletteSize = 256
-func standardPaletteIndexes() -> [UInt8] {
-    (0..<standardPaletteSize).map( UInt8.init )
+func draw(pixels: inout [UInt32], inRect canvasRect: Rect, pitch: Int32, renderer targetRenderer: OpaquePointer) {
+    let height = Int32(canvasRect.size.height)
+    let width = Int32(canvasRect.size.width)
+    precondition(pixels.count == height * width)
+    pixels.withUnsafeMutableBytes {
+        let pixelPointer: UnsafeMutableRawPointer = $0.baseAddress!
+        guard let rgbSurface = SDL_CreateRGBSurfaceWithFormatFrom(pixelPointer, width, height, 32, pitch, SDL_PIXELFORMAT_RGBA8888.rawValue) else {
+            sdlFatalError(reason: "SDL_CreateRGBSurfaceWithFormatFrom failed")
+        }
+        
+        guard let textureWithPixels = SDL_CreateTextureFromSurface(targetRenderer, rgbSurface) else {
+            sdlFatalError(reason: "SDL_CreateTextureFromSurface failed")
+        }
+        SDL_RenderCopy(targetRenderer, textureWithPixels, nil, nil)
+        SDL_DestroyTexture(textureWithPixels)
+        SDL_FreeSurface(rgbSurface)
+    }
 }
 
 
 
-var palPalette_:  [UInt8] = []
-func palPalette() -> [UInt8] {
-    let aggFile = try! AGGFile(path: AGGFile.defaultFilePathHeroes2)
-    let kbPalFromAgg = aggFile.dataForPalette()
-    // There is only one file of this type in the archive : the file "kb.pal". This file is the palette. It contains the colors to use to interpret the images in ICN files. It is a 3*256 bytes file. All group of 3 bytes represent a RGB color. You may notice that this palette is very dark (each byte is letter or equal than 0x3F). You must multiplicate all the bytes by 4 to obtain the real game's colors.
-    // Ref: https://thaddeus002.github.io/fheroes2-WoT/infos/informations.html
-    return kbPalFromAgg.map { 4 * $0 }
+func draw(sprite: Sprite, inRect canvasRect: Rect, pitch: Int32, renderer targetRenderer: OpaquePointer) {
+    
+    // If the image has size as the displayed window/renderer
+    
+    let isFullFrame = sprite.size.width == canvasRect.size.width
+    
+    let palett32Bit: [UInt32] = generatePalette()
+    let whiteColor: UInt32 =  0xffffffff
+    let pixelCount = Int(canvasRect.size.width * canvasRect.size.height)
+    var pixels: [UInt32] = .init(repeating: whiteColor, count: pixelCount)
+    
+    
+    let transform: [UInt32] = palett32Bit
+    
+    let imageData = sprite.data()
+    
+    if isFullFrame {
+        var offset = 0
+        while offset < imageData.count {
+            defer {
+                offset += 1
+            }
+            let transformIndex = Int(imageData[offset])
+            let transformedValue: UInt32 = transform[transformIndex]
+            pixels[offset] = transformedValue
+        }
+    } else {
+        var offset = 0
+        for y in 0..<sprite.size.height {
+            for x in 0..<sprite.size.width {
+                defer { offset += 1 }
+                let blackWhitePixelInfo = Int(imageData[offset])
+                let transformedValue: UInt32 = transform[blackWhitePixelInfo]
+                let index = y * ( Int(canvasRect.size.width) ) + x
+                pixels[index] = transformedValue
+            }
+        }
+    }
+    
+    draw(
+        pixels: &pixels,
+        inRect: canvasRect,
+        pitch: pitch,
+        renderer: targetRenderer
+    )
 }
+
+
+
+
 
 func generatePalette(
-    colorIds: [UInt8] = standardPaletteIndexes()
-//    surfaceSupportsAlpha: Bool = true,
-//    format: UnsafePointer<SDL_PixelFormat>
+    colorIds: [UInt8] = (0..<256).map( UInt8.init ),
+    surfaceSupportsAlpha: Bool = true
 ) -> [UInt32] {
+    var palette32Bit = [UInt32](repeating: 0xff, count: colorIds.count)
+
+    let aggFile = try! AGGFile(path: AGGFile.defaultFilePathHeroes2)
+    let palette = aggFile.dataForPalette()
     
-    var palette32Bit = [UInt32](repeating: 0xff, count: 256)
-    
-    let currentPalette = palPalette()
-    
-    //    let supportsAlpha = surface.format!.pointee.Amask > 0
     
     for i in 0..<palette32Bit.count {
         var offset = 0
         func getValue() -> UInt8 {
             defer { offset += 1 }
             let index = Int(colorIds[i]) * 3 + offset
-            let paletteValue = currentPalette[index]
-//            print("offset: \(offset), index: \(index), i: \(i), paletteValue: \(paletteValue)")
+            let paletteValue = palette[index]
             return paletteValue
         }
         let red = getValue()
         let green = getValue()
         let blue = getValue()
-        //        let format = surface.format
-        let surfaceSupportsAlpha = true
         let format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888.rawValue)
         let color = surfaceSupportsAlpha ? SDL_MapRGBA(format, red, green, blue, 255) : SDL_MapRGB(format, red, green, blue)
         SDL_FreeFormat(format)
@@ -251,16 +302,6 @@ func generatePalette(
     return palette32Bit
 }
 
-func generatePixelsFromColoredDots(width: Int32, height: Int32) -> [UInt32] {
-    let pixelCount = Int(width * height)
-    var pixels: [UInt32] = .init(repeating: 0xffffff, count: pixelCount)
-    
-    for index in 0..<pixelCount {
-        pixels[index] = .random()
-    }
-    
-    return pixels
-}
 
 extension UInt32 {
     
@@ -303,88 +344,16 @@ func testSDL() {
     
     
     
-    func draw(pixels: inout [UInt32], renderer targetRenderer: OpaquePointer) {
-        pixels.withUnsafeMutableBytes {
-            let pixelPointer: UnsafeMutableRawPointer = $0.baseAddress!
-            guard let rgbSurface = SDL_CreateRGBSurfaceWithFormatFrom(pixelPointer, width, height, 32, pitch, SDL_PIXELFORMAT_RGBA8888.rawValue) else {
-                sdlFatalError(reason: "SDL_CreateRGBSurfaceWithFormatFrom failed")
-            }
-            
-            //            if surface.format!.pointee.BitsPerPixel != 32 {
-            //                fatalError("Only 32 bit palette is supported at the moment")
-            //            }
-            //
-            
-            guard let textureWithPixels = SDL_CreateTextureFromSurface(targetRenderer, rgbSurface) else {
-                sdlFatalError(reason: "SDL_CreateTextureFromSurface failed")
-            }
-            SDL_RenderCopy(targetRenderer, textureWithPixels, nil, nil)
-            SDL_DestroyTexture(textureWithPixels)
-            SDL_FreeSurface(rgbSurface)
-        }
-    }
-    
-    func drawRandomPixels() {
-        var pixels = generatePixelsFromColoredDots(width: width, height: height)
-        draw(pixels: &pixels, renderer: renderer)
-    }
-    
-    func draw(sprite: Sprite, renderer targetRenderer: OpaquePointer) {
-        
-        // If the image has size as the displayed window/renderer
-        let isFullFrame = sprite.size.width == width
-        
-        let palett32Bit: [UInt32] = generatePalette()
-        let whiteColor: UInt32 =  0xffffffff
-        let pixelCount = Int(width * height)
-        var pixels: [UInt32] = .init(repeating: whiteColor, count: pixelCount)
-        
-        
-        let transform: [UInt32] = palett32Bit
-        
-        let imageData = sprite.data()
-        
-        if isFullFrame {
-            var offset = 0
-            while offset < imageData.count {
-                defer {
-                    offset += 1
-                }
-                let transformIndex = Int(imageData[offset])
-                let transformedValue: UInt32 = transform[transformIndex]
-                pixels[offset] = transformedValue
-            }
-        } else {
-            var offset = 0
-            for y in 0..<sprite.size.height {
-                for x in 0..<sprite.size.width {
-                    defer { offset += 1 }
-                    let blackWhitePixelInfo = Int(imageData[offset])
-                    let transformedValue: UInt32 = transform[blackWhitePixelInfo]
-                    let index = y * ( Int(width) ) + x
-                    pixels[index] = transformedValue
-                }
-            }
-        }
-        
-        draw(pixels: &pixels, renderer: renderer)
-    }
-    
-    
     func drawPhoenix() {
         let aggFile = try! AGGFile(path: AGGFile.defaultFilePathHeroes2)
         let sprite = aggFile.smallSpriteForCreature(.phoenixSmall)
-        draw(sprite: sprite, renderer: renderer)
+        draw(sprite: sprite, inRect: .init(width: width, height: height), pitch: pitch, renderer: renderer)
     }
     
-    func drawFunStuff() {
-        //        drawRandomPixels()
-        drawPhoenix()
-    }
     
-    func doDrawFunStuff() {
+    func doDrawPhoenix() {
         SDL_RenderClear(renderer)
-        drawFunStuff()
+        drawPhoenix()
         SDL_RenderPresent(renderer)
     }
     
@@ -397,7 +366,7 @@ func testSDL() {
     var e: SDL_Event = SDL_Event(type: 1)
     var quit = false
     
-    doDrawFunStuff()
+    doDrawPhoenix()
     
     while !quit {
         while SDL_PollEvent(&e) != 0 {
@@ -412,7 +381,7 @@ func testSDL() {
                     print("Did press Quit ('Q' key)")
                     quit = true
                 } else {
-                    doDrawFunStuff()
+                    doDrawPhoenix()
                 }
             }
             
