@@ -31,22 +31,22 @@ struct ColorRGB {
     let alpha: Value
 }
 
-func pixelFormatFromTexture(_ texture: OpaquePointer) -> SDL_PixelFormat {
-    var format: UInt32 = 0
-    SDL_QueryTexture(texture, &format, nil, nil, nil)
-    var pixelFormat = SDL_PixelFormat()
-    pixelFormat.format = format
-    return pixelFormat
-}
-
-func rgbaPixelFormat(renderer: OpaquePointer) -> SDL_PixelFormat {
-    guard let dummyTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888.rawValue, Int32(SDL_TEXTUREACCESS_STATIC.rawValue), 64, 48) else {
-        sdlFatalError(reason: "SDL_CreateTexture failed")
-    }
-    let pixelFormat = pixelFormatFromTexture(dummyTexture)
-    SDL_DestroyTexture(dummyTexture)
-    return pixelFormat
-}
+//func pixelFormatFromTexture(_ texture: OpaquePointer) -> SDL_PixelFormat {
+//    var format: UInt32 = 0
+//    SDL_QueryTexture(texture, &format, nil, nil, nil)
+//    var pixelFormat = SDL_PixelFormat()
+//    pixelFormat.format = format
+//    return pixelFormat
+//}
+//
+//func rgbaPixelFormat(renderer: OpaquePointer) -> SDL_PixelFormat {
+//    guard let dummyTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888.rawValue, Int32(SDL_TEXTUREACCESS_STREAMING.rawValue), 64, 48) else {
+//        sdlFatalError(reason: "SDL_CreateTexture failed")
+//    }
+//    let pixelFormat = pixelFormatFromTexture(dummyTexture)
+//    SDL_DestroyTexture(dummyTexture)
+//    return pixelFormat
+//}
 
 func mutateTexturePixels(texture: OpaquePointer, pixelColor: ColorRGB, position: Point) {
     // Get the size of the texture.
@@ -242,21 +242,23 @@ let kb_pal: [UInt8] = [
 var palPalette_:  [UInt8] = []
 func palPalette() -> [UInt8] {
     if palPalette_.isEmpty {
-        palPalette_ = .init(repeating: 0xff, count: 3 * 256)
+        let paletteSize = 3 * 256
+        assert(paletteSize == kb_pal.count)
+        palPalette_ = .init(repeating: 0xff, count: paletteSize)
         for i in 0..<palPalette_.count {
             palPalette_[i] = kb_pal[i] << 2
         }
+        print("Generated PAL palette: \(Data(palPalette_).hexDescription)")
     }
     
     return palPalette_
 }
 
 func generatePalette(
-    colorIds: [UInt8] = standardPaletteIndexes(),
-    surfaceSupportsAlpha: Bool = true,
-    format: UnsafePointer<SDL_PixelFormat>
+    colorIds: [UInt8] = standardPaletteIndexes()
+//    surfaceSupportsAlpha: Bool = true,
+//    format: UnsafePointer<SDL_PixelFormat>
 ) -> [UInt32] {
-    
     
     var palette32Bit = [UInt32](repeating: 0xff, count: 256)
     
@@ -268,13 +270,19 @@ func generatePalette(
         var offset = 0
         func getValue() -> UInt8 {
             defer { offset += 1 }
-            return currentPalette[Int(colorIds[i]) * 3 + offset]
+            let index = Int(colorIds[i]) * 3 + offset
+            let paletteValue = currentPalette[index]
+//            print("offset: \(offset), index: \(index), i: \(i), paletteValue: \(paletteValue)")
+            return paletteValue
         }
         let red = getValue()
         let green = getValue()
         let blue = getValue()
         //        let format = surface.format
+        let surfaceSupportsAlpha = true
+        let format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888.rawValue)
         let color = surfaceSupportsAlpha ? SDL_MapRGBA(format, red, green, blue, 255) : SDL_MapRGB(format, red, green, blue)
+        SDL_FreeFormat(format)
         palette32Bit[i] = color
     }
     
@@ -290,6 +298,14 @@ func generatePixelsFromColoredDots(width: Int32, height: Int32) -> [UInt32] {
     }
     
     return pixels
+}
+
+extension UInt32 {
+    
+    var data: Data {
+        let data = withUnsafeBytes(of: self) { Data($0) }
+        return data
+    }
 }
 
 func testSDL() {
@@ -357,23 +373,26 @@ func testSDL() {
         // If the image has size as the displayed window/renderer
         let isFullFrame = sprite.size.width == width
         
-        var pixelFormat = rgbaPixelFormat(renderer: targetRenderer)
-        let palett32Bit: [UInt32] = generatePalette(format: &pixelFormat)
+//        var pixelFormat = rgbaPixelFormat(renderer: targetRenderer)
+        let palett32Bit: [UInt32] = generatePalette()
         let whiteColor: UInt32 =  0xffffffff //SDL_MapRGBA(&pixelFormat, 255, 255, 255, 255)
         print("+", terminator: "")
         let pixelCount = Int(width * height)
         var pixels: [UInt32] = .init(repeating: whiteColor, count: pixelCount)
         
+        print("sprite: \(sprite)")
         
         let transform: [UInt32] = palett32Bit
         
+        let imageData = sprite.data()
+        
         if isFullFrame {
             var offset = 0
-            while offset < sprite.imageData.count {
+            while offset < imageData.count {
                 defer {
                     offset += 1
                 }
-                let transformIndex = Int(sprite.imageData[offset])
+                let transformIndex = Int(imageData[offset])
                 let transformedValue: UInt32 = transform[transformIndex]
                 pixels[offset] = transformedValue
             }
@@ -382,12 +401,15 @@ func testSDL() {
             for y in 0..<sprite.size.height {
                 for x in 0..<sprite.size.width {
                     defer { offset += 1 }
-//                    let transformIndex = Int(sprite.imageData[offset])
-//                    let transformedValue: UInt32 = transform[transformIndex]
-                    let rawImageData = UInt32(sprite.imageData[offset])
+                    let blackWhitePixelInfo = Int(imageData[offset])
+                    let transformedValue: UInt32 = transform[blackWhitePixelInfo]
                     let index = y * ( Int(width) ) + x
-                    print("y \(y), x: \(x), index: \(index), rawImageData: \(rawImageData)")
-                    pixels[index] = rawImageData //transformedValue
+//                    if offset % 500 == 0 {
+//                        print("offset=\(offset), index: \(index), rawData: \(blackWhitePixelInfo), transformedData: \(transformedValue)")
+//                    }
+//                    let transformedValuesRGBA: [UInt8] = [UInt8].init(nonTransformed.data)
+//                    let rgbPixelColor = SDL_MapRGBA(&pixelFormat, transformedValuesRGBA[0], transformedValuesRGBA[1], transformedValuesRGBA[2], 255)
+                    pixels[index] = transformedValue
                     
                 }
             }
