@@ -76,7 +76,7 @@ public struct AGGFile {
             let fileOffset = try fileEntries.readUInt32()
             let fileSize = try fileEntries.readUInt32()
             files[name] = (fileSize: Int(fileSize), fileOffset: Int(fileOffset))
-            if name.contains(".BMP") {
+            if !(name.contains(".BMP") || name.contains(".ICN") || name.contains(".82M")) {
                 print(name, terminator: ", ")
             }
         }

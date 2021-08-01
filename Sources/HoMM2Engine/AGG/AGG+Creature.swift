@@ -68,28 +68,3 @@ private extension Creature {
     }
 }
 
-
-/*
- MonsterAnimInfo MonsterAnimCache::getAnimInfo( int monsterID )
- {
- std::map<int, MonsterAnimInfo>::iterator mapIterator = _animMap.find( monsterID );
- if ( mapIterator != _animMap.end() ) {
- return mapIterator->second;
- }
- else {
- auto fileName = Bin_Info::GetFilename( monsterID );
- auto monsterInfoBin = AGG::LoadBINFRM( fileName );
- const MonsterAnimInfo info( monsterID, monsterInfoBin );
- if ( info.isValid() ) {
- _animMap[monsterID] = info;
- return info;
- }
- else {
- DEBUG_LOG( DBG_ENGINE, DBG_WARN, "missing BIN FRM data: " << Bin_Info::GetFilename( monsterID ) << ", index: " << monsterID );
- }
- 
- 
- }
- return MonsterAnimInfo();
- }
- */
