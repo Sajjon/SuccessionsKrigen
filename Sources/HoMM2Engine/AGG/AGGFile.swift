@@ -175,6 +175,7 @@ public struct Sprite {
     }
 }
 
+/*
 
 // 0 in shadow part means no shadow, 1 means skip any drawings so to don't waste extra CPU cycles for ( tableId - 2 ) command we just add extra fake tables
 // Mirror palette was modified as it was containing 238, 238, 239, 240 values instead of 238, 239, 240, 241
@@ -341,64 +342,42 @@ private let transformTable: [UInt8] = [
     174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202,
     203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 188, 188, 188, 188, 118, 118, 118, 118, 222, 223, 224, 225, 226, 227, 228, 229, 230, 69,
     69,  69,  69,  69,  69,  69,  69,  69,  69,  69,  242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255 // No cycle
-];
+]
+*/
 
+
+//private extension Sprite {
+//    func dataWithTransform() -> Data {
+//        let skipPixel: UInt8 = 1
+//
+//        let imageBytes = [UInt8](imageData)
+//        let imageOutBytes = imageBytes.enumerated().compactMap { index, byte -> UInt8? in
+//            let transformValue: UInt8 = imageTransform[index]
+//            guard transformValue != skipPixel else {
+//                return byte // return nil instead?
+//            }
+//
+//            let shouldPerformTransform = transformValue > 0
+//
+//            guard shouldPerformTransform else {
+//                // copy a pixel "as is"
+//                return byte
+//            }
+//
+//            // Perform transform (does not seem to be needed?)
+//            let tranformTableIndex = Int(transformValue) * 256
+//            let transformed = transformTable[tranformTableIndex]
+//            return transformed
+//        }
+//        return Data(imageOutBytes)
+//    }
+//}
 
 public extension Sprite {
     func data() -> Data {
-        let skipPixel: UInt8 = 1
-        
-        let imageBytes = [UInt8](imageData)
-        let imageOutBytes = imageBytes.enumerated().compactMap { index, byte -> UInt8? in
-            let transformValue: UInt8 = imageTransform[index]
-            guard transformValue != skipPixel else {
-                return byte // return nil instead?
-            }
-            
-            let shouldPerformTransform = transformValue > 0
-            
-            guard shouldPerformTransform else {
-                // copy a pixel "as is"
-                return byte
-            }
-            
-            // Perform transform
-            let tranformTableIndex = Int(transformValue) * 256
-            let transformed = transformTable[tranformTableIndex]
-            return transformed
-        }
-        
-        /*
-// NOT 'flip'
-// NOT 'singleLayer'
-uint8_t * transformOutY = out.transform() + offsetOutY;
-
-for ( ; imageInY != imageInYEnd; imageInY += widthIn, transformInY += widthIn, imageOutY += widthOut, transformOutY += widthOut ) {
-    const uint8_t * imageInX = imageInY;
-    const uint8_t * transformInX = transformInY;
-    uint8_t * imageOutX = imageOutY;
-    uint8_t * transformOutX = transformOutY;
-    const uint8_t * imageInXEnd = imageInX + width;
-
-    for ( ; imageInX != imageInXEnd; ++imageInX, ++transformInX, ++imageOutX, ++transformOutX ) {
-        if ( *transformInX == 1 ) { // skip pixel
-            continue;
-        }
-
-        if ( *transformInX > 0 && *transformOutX == 0 ) { // apply a transformation
-            *imageOutX = *( transformTable + ( *transformInX ) * 256 + *imageOutX );
-        }
-        else { // copy a pixel
-            *transformOutX = *transformInX;
-            *imageOutX = *imageInX;
-        }
+        imageData  // dataWithTransform() // Transform does not seem to be needed. As in: neither `self.imageTransform`, neither `transformTable`.
     }
 }
-         */
-        return Data(imageOutBytes)
-    }
-}
-
 
     
 public extension AGGFile.SpriteCache {
@@ -576,8 +555,6 @@ private extension AGGFile {
     
     static let headerSize = 6
     
-  
-    
     /// "LoadOriginalICN"
     func loadOriginal(icon: Icon) throws {
         let fileName = icon.iconFileName
@@ -657,7 +634,7 @@ private extension AGGFile {
    
     }
     
-    /// ✅ "IsScalableICN"
+    /// "IsScalableICN"
     func isScalable(icon: Icon) -> Bool {
         return icon == .HEROES || icon == .BTNSHNGL || icon == .SHNGANIM
     }
@@ -719,11 +696,6 @@ public extension AGGFile {
         try! loadOriginal(icon: icon)
         let allSprites = spriteCache._spritesFor(icon: icon)
         let sprites = allSprites.filter { $0.size.height > 1 && $0.size.width > 1 }
-//        let largestSprite = sprites.max(by: { $0.size.height < $1.size.height })!
-//        sprites.enumerated().forEach { index, sprite in
-//            print("index=\(index), size: \(sprite.size), data.count=\(sprite.data().count)")
-//        }
-//        return largestSprite
         return sprites
     }
     
