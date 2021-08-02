@@ -162,10 +162,6 @@ public struct Sprite {
         self.offset = offset
         self.imageData = imageData
         self.imageTransform = imageTransform
-        
-        
-        printSha256(data: imageData, label: "Sprite icon: \(icon), imageData")
-        printSha256(data: imageTransform, label: "Sprite icon: \(icon), imageTransform")
     }
     
     public init(icon: Icon, width: Int, height: Int, offsetX: Int, offsetY: Int, imageData: Data, imageTransform: Data) {
