@@ -76,9 +76,9 @@ public struct AGGFile {
             let fileOffset = try fileEntries.readUInt32()
             let fileSize = try fileEntries.readUInt32()
             files[name] = (fileSize: Int(fileSize), fileOffset: Int(fileOffset))
-            if !(name.contains(".BMP") || name.contains(".ICN") || name.contains(".82M")) {
-                print(name, terminator: ", ")
-            }
+//            if !(name.contains(".BMP") || name.contains(".ICN") || name.contains(".82M") || name.contains(".82M")) {
+//                print(name, terminator: ", ")
+//            }
         }
         
 
@@ -463,12 +463,11 @@ public extension SpriteDecoder {
     func decodeSprite(
         icon: Icon,
         data rawData: Data,
-        width: Int32,
-        height: Int32,
-        offsetX: Int16,
-        offsetY: Int16
+        width: UInt16,
+        height: UInt16,
+        offsetX: UInt16,
+        offsetY: UInt16
     ) throws -> Sprite {
-     
         let totalPixelCount = Int(width * height)
         var imageData = Data(repeating: 0, count: totalPixelCount)
         var imageTransform = Data(repeating: 1, count: totalPixelCount)
@@ -587,17 +586,22 @@ private extension AGGFile {
     func loadOriginal(icon: Icon) throws {
         let fileName = icon.iconFileName
         let body = try read(fileName: fileName)
-        print("🔮 LoadOriginalICN ICN::GetString( id ): \(fileName), body.size(): \(body.count), sha256(body): \(sha256Hex(data: body))")
-        let dataReader = DataReader(data: body)
+        var dataReader = DataReader(data: body)
         
         let count = Int(try dataReader.readUInt16())
         let blockSize = try dataReader.readUInt32()
         guard count > 0, blockSize > 0 else { throw Error.failedToLoadImageSprite }
         
-        print("🔮 LoadOriginalICN count: \(count)")
         
         let sprites: [Sprite] = try (0..<count).map { i throws -> Sprite in
-            try dataReader.seek(to: Self.headerSize + i * 13)
+            let targetOffset = Self.headerSize + i * 13
+            if targetOffset < dataReader.offset {
+                // uh this is terrible code! Plz fix me FFS... seriously.
+                dataReader = DataReader(data: body)
+                try! dataReader.seek(to: targetOffset)
+            } else {
+                try dataReader.seek(to: targetOffset)
+            }
             let header1 = try dataReader.readIconHeader()
             var sizeData: UInt32 = 0
             if i + 1 != count {
@@ -606,7 +610,7 @@ private extension AGGFile {
             } else {
                 sizeData = blockSize - header1.offsetData
             }
-            let data = Data(body.suffix(from: Self.headerSize + Int(header1.offsetData)))
+            let data = Data((body.suffix(from: Self.headerSize +  Int(header1.offsetData))).prefix(Int(sizeData)))
             
             assert(data.count == sizeData)
             
@@ -614,10 +618,10 @@ private extension AGGFile {
             let sprite = try spriteDecoder.decodeSprite(
                 icon: icon,
                 data: data,
-                width: .init(header1.width),
-                height: .init(header1.height),
-                offsetX: .init(header1.offsetX),
-                offsetY: .init(header1.offsetY)
+                width: header1.width,
+                height: header1.height,
+                offsetX: header1.offsetX,
+                offsetY: header1.offsetY
             )
             return sprite
         }
@@ -715,11 +719,16 @@ private extension AGGFile {
 
 public extension AGGFile {
     
-    func smallSpriteForCreature(_ icon: Icon) -> Sprite {
+    func spritesForCreature(_ icon: Icon) -> [Sprite] {
         try! loadOriginal(icon: icon)
-        let sprites = spriteCache._spritesFor(icon: icon)
-        assert(sprites.count == 1)
-        return sprites[0]
+        let allSprites = spriteCache._spritesFor(icon: icon)
+        let sprites = allSprites.filter { $0.size.height > 1 && $0.size.width > 1 }
+//        let largestSprite = sprites.max(by: { $0.size.height < $1.size.height })!
+//        sprites.enumerated().forEach { index, sprite in
+//            print("index=\(index), size: \(sprite.size), data.count=\(sprite.data().count)")
+//        }
+//        return largestSprite
+        return sprites
     }
     
     func spriteFor(creature: Creature) throws -> Sprite {

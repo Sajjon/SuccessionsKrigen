@@ -344,11 +344,17 @@ func testSDL() {
     
     
     
-    func drawPhoenix() {
+    var nextSpriteIndex = 0
+    func drawPhoenix(index: Int? = nil) {
         let aggFile = try! AGGFile(path: AGGFile.defaultFilePathHeroes2)
-        let sprite = aggFile.smallSpriteForCreature(.phoenixSmall)
+        let sprites = aggFile.spritesForCreature(.PHOENIX)
+        let index = min(nextSpriteIndex, sprites.count - 1)
+        let sprite = sprites[index]
         draw(sprite: sprite, inRect: .init(width: width, height: height), pitch: pitch, renderer: renderer)
+        nextSpriteIndex = index == sprites.count - 1 ? 0 : index + 1
     }
+    
+
     
     
     func doDrawPhoenix() {
@@ -369,6 +375,8 @@ func testSDL() {
     doDrawPhoenix()
     
     while !quit {
+        doDrawPhoenix()
+        SDL_Delay(50)
         while SDL_PollEvent(&e) != 0 {
             if e.type == SDL_QUIT.rawValue {
                 quit = true
@@ -380,8 +388,6 @@ func testSDL() {
                 if e.key.keysym.sym == SDLK_q.rawValue {
                     print("Did press Quit ('Q' key)")
                     quit = true
-                } else {
-                    doDrawPhoenix()
                 }
             }
             

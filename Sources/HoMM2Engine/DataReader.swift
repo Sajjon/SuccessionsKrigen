@@ -96,9 +96,14 @@ public extension DataReader {
     
     
     func read(byteCount: Int) throws -> Data {
-        guard source.count >= byteCount else { throw Error.outOfBounds }
-        defer { offset += byteCount }
-        return source.droppedFirst(byteCount)
+        guard source.count >= byteCount else {
+            throw Error.outOfBounds
+        }
+        
+        let droppedDataToReturn = source.droppedFirst(byteCount)
+        offset += byteCount
+        assert(droppedDataToReturn.count == byteCount)
+        return droppedDataToReturn
     }
     
     func readInt(endianess: Endianess = .little) throws -> Int {
@@ -114,8 +119,12 @@ public extension DataReader {
     }
     
     func seek(to offset: Int) throws {
-        guard offset < originalSize else { throw Error.outOfBounds }
-        guard offset >= self.offset else { throw Error.outOfBounds }
+        guard offset < originalSize else {
+            throw Error.outOfBounds
+        }
+        guard offset >= self.offset else {
+            throw Error.outOfBounds
+        }
         guard offset != self.offset else { return }
         let byteCount = offset - self.offset
         
@@ -125,4 +134,6 @@ public extension DataReader {
         assert(self.offset == offset)
         assert(source.count + self.offset == originalSize)
     }
+    
+    
 }
