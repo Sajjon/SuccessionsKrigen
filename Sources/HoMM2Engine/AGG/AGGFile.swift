@@ -148,7 +148,12 @@ public struct Rect {
     }
 }
 
-public struct Sprite {
+public struct Sprite: Equatable {
+    public enum SpriteType: Equatable {
+        case single
+        case series(index: Int, ofTotal: Int)
+    }
+    public let spriteType: SpriteType
     public let icon: Icon
     public let size: Size
     public let offset: Point
@@ -156,17 +161,35 @@ public struct Sprite {
     private let imageData: Data
     private let imageTransform: Data
     
-    public init(icon: Icon, size: Size, offset: Point, imageData: Data, imageTransform: Data) {
+    public init(
+        icon: Icon,
+        spriteType: SpriteType,
+        size: Size,
+        offset: Point,
+        imageData: Data,
+        imageTransform: Data
+    ) {
         self.icon = icon
+        self.spriteType = spriteType
         self.size = size
         self.offset = offset
         self.imageData = imageData
         self.imageTransform = imageTransform
     }
     
-    public init(icon: Icon, width: Int32, height: Int32, offsetX: Int16, offsetY: Int16, imageData: Data, imageTransform: Data) {
+    public init(
+        icon: Icon,
+        spriteType: SpriteType,
+        width: Int32,
+        height: Int32,
+        offsetX: Int16,
+        offsetY: Int16,
+        imageData: Data,
+        imageTransform: Data
+    ) {
         self.init(
             icon: icon,
+            spriteType: spriteType,
             size: .init(width: .init(width), height: .init(height)),
             offset: .init(x: .init(offsetX), y: .init(offsetY)),
             imageData: imageData,
@@ -437,6 +460,7 @@ public extension SpriteDecoder {
 
     func decodeSprite(
         icon: Icon,
+        spriteType: Sprite.SpriteType,
         data rawData: Data,
         width: UInt16,
         height: UInt16,
@@ -542,6 +566,7 @@ public extension SpriteDecoder {
  
         return  .init(
             icon: icon,
+            spriteType: spriteType,
             width: .init(width), height: .init(height),
             offsetX: .init(bitPattern: offsetX), offsetY: .init(bitPattern: offsetY),
             imageData: imageData,
@@ -590,6 +615,7 @@ private extension AGGFile {
             let spriteDecoder = SpriteDecoder()
             let sprite = try spriteDecoder.decodeSprite(
                 icon: icon,
+                spriteType: count == 1 ? .single : .series(index: i, ofTotal: count),
                 data: data,
                 width: header1.width,
                 height: header1.height,
