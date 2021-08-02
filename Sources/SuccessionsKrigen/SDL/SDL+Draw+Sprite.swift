@@ -10,7 +10,9 @@ import HoMM2Engine
 
 import CSDL2
 
+
 func draw(sprite: Sprite, inRect canvasRect: Rect, pitch: Int32, renderer targetRenderer: OpaquePointer) {
+    // See fheroes2 method `copyImageToSurface` in `screen.cpp` (32 bit version...)
     
     // If the image has size as the displayed window/renderer
     let isFullFrame = sprite.size.width == canvasRect.size.width

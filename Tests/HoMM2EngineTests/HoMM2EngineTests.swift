@@ -17,6 +17,18 @@ final class HoMM2EngineTests: XCTestCase {
         XCTAssertEqual(aggFile.size, 43363026)
         XCTAssertEqual(aggFile.size, AGGFile.heroes2.size)
     }
+    
+    func testIntConversion() {
+        func doTest(uint16: UInt16, expected: Int16) {
+            let converted: Int16 = .init(bitPattern: uint16)
+            XCTAssertEqual(converted, expected)
+        }
+        doTest(uint16: 65516, expected: -20)
+        doTest(uint16: 65520, expected: -16)
+        doTest(uint16: 65528, expected: -8)
+        doTest(uint16: 65517, expected: -19)
+        
+    }
 
     func test_assert_number_of_records_in_heroes2agg_agg_file() throws {
         let aggFile = try AGGFile(path: heroes2AggFilePath)

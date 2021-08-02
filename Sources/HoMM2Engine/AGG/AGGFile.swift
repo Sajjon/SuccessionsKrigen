@@ -164,11 +164,11 @@ public struct Sprite {
         self.imageTransform = imageTransform
     }
     
-    public init(icon: Icon, width: Int, height: Int, offsetX: Int, offsetY: Int, imageData: Data, imageTransform: Data) {
+    public init(icon: Icon, width: Int32, height: Int32, offsetX: Int16, offsetY: Int16, imageData: Data, imageTransform: Data) {
         self.init(
             icon: icon,
-            size: .init(width: width, height: height),
-            offset: .init(x: offsetX, y: offsetY),
+            size: .init(width: .init(width), height: .init(height)),
+            offset: .init(x: .init(offsetX), y: .init(offsetY)),
             imageData: imageData,
             imageTransform: imageTransform
         )
@@ -543,7 +543,7 @@ public extension SpriteDecoder {
         return  .init(
             icon: icon,
             width: .init(width), height: .init(height),
-            offsetX: .init(offsetX), offsetY: .init(offsetY),
+            offsetX: .init(bitPattern: offsetX), offsetY: .init(bitPattern: offsetY),
             imageData: imageData,
             imageTransform: imageTransform
         )
