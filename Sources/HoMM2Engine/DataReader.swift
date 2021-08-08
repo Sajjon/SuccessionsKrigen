@@ -135,5 +135,30 @@ public extension DataReader {
         assert(source.count + self.offset == originalSize)
     }
     
+    func skip(byteCount: Int) throws {
+        // Discard data
+        let _ = try read(byteCount: byteCount)
+    }
+    
+    func readUntilZero() throws -> Data {
+        var bytes = [UInt8]()
+        while true {
+            let byte = try readUInt8()
+            guard byte != 0x00 else {
+                break
+            }
+            bytes.append(byte)
+        }
+        return Data(bytes)
+    }
+    
+    func readStringUntilNullTerminator(encoding: String.Encoding = .utf8) throws -> String {
+        let bytes = try readUntilZero()
+        guard let string = String(bytes: bytes, encoding: encoding) else {
+            fatalError("no string")
+        }
+        return string
+    }
+    
     
 }
