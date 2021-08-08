@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import HoMM2Engine
+import SuccessionsKrigen
 import CSDL2
 
 func draw(pixels: inout [UInt32], inRect canvasRect: Rect, pitch: Int32, renderer targetRenderer: OpaquePointer) {

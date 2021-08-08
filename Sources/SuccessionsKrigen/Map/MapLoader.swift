@@ -1016,7 +1016,7 @@ public extension Map {
     }
     
     struct Hero: Equatable {
-        let hero: HoMM2Engine.Hero
+        let hero: SuccessionsKrigen.Hero
         let color: Map.Color
         let worldPosition: WorldPosition
         let army: Army
@@ -1225,7 +1225,7 @@ private extension DataReader {
         kingdoms: inout [Kingdom]
     ) throws -> Map.CastlesHeroesEventsRumorsEtc {
         
-        func readHero(heroType: HoMM2Engine.Hero, worldPosition: WorldPosition) throws -> Map.Hero {
+        func readHero(heroType: SuccessionsKrigen.Hero, worldPosition: WorldPosition) throws -> Map.Hero {
             try skip(byteCount: 1) // unknown
             let hasCustomTroops = try readUInt8()
             let army: Map.Hero.Army

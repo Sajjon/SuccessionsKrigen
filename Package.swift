@@ -12,21 +12,21 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "HoMM2Engine",
+            name: "SuccessionsKrigen",
             dependencies: []
         ),
         .target(
-            name: "SuccessionsKrigen",
+            name: "SuccessionsKrigenSDLExample",
             dependencies: [
-                "HoMM2Engine",
+                "SuccessionsKrigen",
                 .product(name: "SwiftSDL2", package: "SwiftSDL")
 //                "SDL2"
             ]),
         .testTarget(
-            name: "HoMM2EngineTests",
-            dependencies: ["HoMM2Engine"]),
-        .testTarget(
             name: "SuccessionsKrigenTests",
             dependencies: ["SuccessionsKrigen"]),
+        .testTarget(
+            name: "SuccessionsKrigenSDLExampleTests",
+            dependencies: ["SuccessionsKrigenSDLExample"]),
     ]
 )

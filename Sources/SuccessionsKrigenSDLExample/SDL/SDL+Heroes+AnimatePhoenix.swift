@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import HoMM2Engine
+import SuccessionsKrigen
 import CSDL2
 
 func animatePhoenixWithSDL() {
