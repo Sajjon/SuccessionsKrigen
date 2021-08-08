@@ -42,10 +42,15 @@ public struct AGGFile {
     // "_icnVsSprite"
     public private(set) var spriteCache = SpriteCache()
     
-    public init(path: String) throws {
+    public init(path: String = Self.defaultFilePathHeroes2) throws {
         guard let contentsRaw = FileManager.default.contents(atPath: path) else {
             throw Error.fileNotFound
         }
+        try self.init(rawData: contentsRaw)
+    }
+    
+    public init(rawData contentsRaw: Data) throws {
+  
         self.rawData = contentsRaw
         var files: [String: FileMetadata] = [:]
 
