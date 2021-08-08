@@ -11,7 +11,119 @@ public struct MapLoader {
     public init() {}
 }
 
-public struct Map: Equatable {}
+public struct Map: Equatable {
+    let unique: Int
+    let size: Size
+    let tiles: Tiles
+    let heroes: Heroes
+    let castles: Castles
+    let kingdoms: Kingdoms
+    let rumors: Rumors
+    let eventsDay: EventsDates
+    let capturedObjects: CapturedObjects
+    let signEventRiddles: SignEventRiddles
+    
+    let date: MapDate
+    
+    let weekOfCurrent: WeekOf
+    let weekOfNext: WeekOf
+    let ultimateArtifact: UltimateArtifact?
+    
+    fileprivate init(
+        unique: Int,
+        size: Size,
+        tiles tileList: [Tile],
+        heroes heroList: [Hero],
+        castles castleList: [Castle],
+        kingdoms kingdomList: [Kingdom],
+        rumors rumorList: [Rumor],
+        eventsDay eventsDayList: [EventDate],
+        capturedObjects: CapturedObjects,
+        signEventRiddles signEventRiddlesList: [Map.SignEventRiddle]
+    ) throws {
+        precondition(tileList.count == size.rawValue * size.rawValue, "Disrepancy between size and number of tiles")
+        self.unique = unique
+        self.size = size
+        self.tiles = .init(tiles: tileList)
+        self.heroes = .init(heroes: heroList)
+        self.castles = .init(castles: castleList)
+        self.kingdoms = .init(kingdoms: kingdomList)
+        self.rumors = .init(rumors: rumorList)
+        self.eventsDay = .init(eventDate: eventsDayList)
+        self.capturedObjects = capturedObjects
+        self.signEventRiddles = .init(signEventRiddles: signEventRiddlesList)
+        
+        self.date = .init(day: 1, week: 1, month: 1)
+        self.weekOfCurrent = .random()
+        self.weekOfNext = .random()
+        
+        if let tileForUltimateArtifact = tileList.first(where: { $0.info.mapObjectType == .randomUltimateArtifact }) {
+            self.ultimateArtifact = .init(artifact: .randomUltimate(), worldPosition: tileForUltimateArtifact.worldPosition, isFound: false)
+        } else {
+            self.ultimateArtifact = .init(artifact: .randomUltimate(), worldPosition: WorldPosition(x: 1, y: 1), isFound: false)
+        }
+    }
+    
+    public struct MapDate: Equatable {
+        let day: Int
+        let week: Int
+        let month: Int
+    }
+    public struct Tiles: Equatable {
+        let tiles: [Tile]
+    }
+    public struct EventsDates: Equatable {
+        let eventDate: [EventDate]
+    }
+    public struct SignEventRiddles: Equatable {
+        let signEventRiddles: [Map.SignEventRiddle]
+    }
+    public struct Heroes: Equatable {
+        let heroes: [Hero]
+    }
+    public struct Castles: Equatable {
+        let castles: [Castle]
+    }
+    public struct Rumors: Equatable {
+        let rumors: [Rumor]
+    }
+    public struct Kingdoms: Equatable {
+        let kingdoms: [Kingdom]
+    }
+    
+    public struct UltimateArtifact: Equatable {
+        let artifact: Artifact
+        let worldPosition: WorldPosition
+        let isFound: Bool
+    }
+    
+    public enum WeekOf: Equatable, CaseIterable {
+        case plague,
+              ant,
+              grasshopper,
+              dragonfly,
+              spider,
+              butterfly,
+              bumblebee,
+              locust,
+              earthworm,
+              hornet,
+              beetle,
+              squirrel,
+              rabbit,
+              gopher,
+              badger,
+              eagle,
+              weasel,
+              raven,
+              mongoose,
+              aardvark,
+              lizard,
+              tortoise,
+              hedgehog,
+              condor
+    }
+}
 
 // MARK: - Size
 public extension Map {
@@ -564,35 +676,31 @@ private extension DataReader {
     }
 }
 
-public extension Map {
+
+
+private extension DataReader {
     
-    /// WHY do we group lighthouse and dragon city together with mines? :/
+    /// Temporary
     enum MineLighthouseOrDragonCity: UInt8, Equatable {
         case sawmill, alchemyLab, oreMine, sulfurMine, crystalMine, gemMine, goldMine
         case lighthouse = 0x64
         case dragonCity = 0x65
         case abandonedMine = 0x67
-    }
-}
-
-public extension Map.MineLighthouseOrDragonCity {
-    var objectMapType: Map.Tile.Info.MapObjectType {
-        switch self {
-        case .sawmill: return .sawmill
-        case .alchemyLab: return .alchemyLab
-        case .oreMine, .sulfurMine, .crystalMine, .gemMine, .goldMine: return .mines
-        case .lighthouse: return .lighthouse
-        case .dragonCity: return .dragonCity
-        case .abandonedMine: return .abandonedMine
+        
+        var objectMapType: Map.Tile.Info.MapObjectType {
+            switch self {
+            case .sawmill: return .sawmill
+            case .alchemyLab: return .alchemyLab
+            case .oreMine, .sulfurMine, .crystalMine, .gemMine, .goldMine: return .mines
+            case .lighthouse: return .lighthouse
+            case .dragonCity: return .dragonCity
+            case .abandonedMine: return .abandonedMine
+            }
         }
     }
-}
-
-
-private extension DataReader {
-    /// Why is `lighthouse` and `dragonCity` grouped together with mines? :/
-    func readMapMineLighthouseOrDragonCity(captureObjects: inout Map.CapturedObjects, mapSize: Map.Size) throws -> [Map.MineLighthouseOrDragonCity] {
-        var mines = [Map.MineLighthouseOrDragonCity]()
+    
+    /// e.g. "mines" and "lighthouse"
+    func readMapCapturableObject(captureObjects: inout Map.CapturedObjects, mapSize: Map.Size) throws {
         // MAPSIZE x 3 byte (x, y, id)
         for _ in 0..<mapSize.rawValue {
             let x = try readUInt8()
@@ -602,12 +710,10 @@ private extension DataReader {
             guard !(x == 0xff && y == 0xff) else { /* Empty block */ continue }
             let worldPosition = CGPoint(x: Int(x), y: Int(y))
             
-            guard let mineEtc = Map.MineLighthouseOrDragonCity(rawValue: mineId) else { throw MapLoader.Error.unrecognizedMine(mineId) }
-            captureObjects = captureObjects.capture(objectOfType: mineEtc.objectMapType, at: worldPosition, by: .none)
+            guard let capturableObject = MineLighthouseOrDragonCity(rawValue: mineId) else { fatalError("Unrecognized capturable object") }
+            captureObjects = captureObjects.capture(objectOfType: capturableObject.objectMapType, at: worldPosition, by: .none)
             
-            mines.append(mineEtc)
         }
-        return mines
     }
 }
 
@@ -719,7 +825,6 @@ public extension MapLoader {
         case parseHeightFailed
         case mapMustBeSquared
         case unrecognizedRace(Race.RawValue)
-        case unrecognizedMine(Map.MineLighthouseOrDragonCity.RawValue)
     }
     
     func loadMap(filePath mapFilePath: String, gameDifficulty: Game.Difficulty) throws -> Map {
@@ -734,12 +839,12 @@ public extension MapLoader {
         }
         
         // Read unique
-        let uniq: UInt32 = try {
+        let unique: Int = try {
             try dataReader.seek(to: contentsRaw.count - 4)
             let unique = try dataReader.readUInt32()
             // Reverse seek... uh this is terrible code! Plz fix me FFS... seriously.
             dataReader = DataReader(data: contentsRaw)
-            return unique
+            return Int(unique)
         }()
         
 
@@ -805,12 +910,13 @@ public extension MapLoader {
         assert(dataReader.offset == addOnsEndIndex + DataReader.numberOfCastleCoordinates*3)
         
         let minesStartIndex = dataReader.offset
-        let mines: [Map.MineLighthouseOrDragonCity] = try dataReader.readMapMineLighthouseOrDragonCity(captureObjects: &captureObjects, mapSize: mapSize)
+        
+        try dataReader.readMapCapturableObject(captureObjects: &captureObjects, mapSize: mapSize)
+        
         try dataReader.seek(to: minesStartIndex + Map.Size.extraLarge.rawValue + 3) // even though map might be small, the next data always starts 144*3 bytes from `minesStartIndex`
 
         // byte: num obelisks (01 default)
         try dataReader.skip(byteCount: 1)
-        fatalError()
         
         // Count final mp2 blocks
         let blockCount = try dataReader.readMapBlockCount()
@@ -826,8 +932,23 @@ public extension MapLoader {
             kingdoms: &kingsdoms
         )
         
+        let map = try Map(
+            unique: unique,
+            size: mapSize,
+            tiles: mapTiles,
+            heroes: castlesHeroesEventsRumorsEtc.heroes,
+            castles: castlesHeroesEventsRumorsEtc.castles,
+            kingdoms: kingsdoms,
+            rumors: castlesHeroesEventsRumorsEtc.rumors,
+            eventsDay: castlesHeroesEventsRumorsEtc.events,
+            capturedObjects: captureObjects,
+            signEventRiddles: castlesHeroesEventsRumorsEtc.signEventRiddle
+        )
+        
+        return map
     }
 }
+
 
 /// "Player"
 public struct Kingdom: Equatable {
@@ -890,7 +1011,9 @@ public extension Map {
         let message: String?
     }
     
-    struct Rumor: Equatable {}
+    struct Rumor: Equatable {
+        let rumor: String
+    }
     
     struct Hero: Equatable {
         let hero: HoMM2Engine.Hero
@@ -898,6 +1021,8 @@ public extension Map {
         let worldPosition: WorldPosition
         let army: Army
         let portraitRawId: Int
+        let experiencePoints: Int
+        let artifacts: [Artifact]
         let secondarySkills: [Map.Hero.SecondarySkill]
         let customName: String?
         let patrols: Bool
@@ -1002,7 +1127,7 @@ public extension Hero {
     }
 }
 
-extension RawRepresentable where Self: CaseIterable {
+extension CaseIterable {
     static func random() -> Self {
         allCases.randomElement()!
     }
@@ -1012,14 +1137,20 @@ public struct Game: Equatable {
     
 }
 public extension Game {
-    enum Difficulty: Int, Equatable {
+    enum Difficulty: Int, Equatable, CaseIterable {
         case easy, normal, hard, expert, impossible
     }
 }
 
-public enum Artifact: UInt8, Equatable {
+public enum Artifact: UInt8, Equatable, CaseIterable {
     case ultimateBook = 0
     case spaceNecromancy = 102
+}
+
+public extension Artifact {
+    static func randomUltimate() -> Self {
+        return .ultimateBook
+    }
 }
 
 public struct Resources: Equatable {
@@ -1198,6 +1329,8 @@ private extension DataReader {
                 worldPosition: worldPosition,
                 army: army,
                 portraitRawId: portraitRawId,
+                experiencePoints: experiencePoints,
+                artifacts: artifacts,
                 secondarySkills: secondarySkills,
                 customName: customName,
                 patrols: patrols,
@@ -1572,7 +1705,7 @@ private extension DataReader {
             } else {
                 // Other events
                 
-                func readEventDate() throws -> Map.EventDate {
+                func readMapEventDate() throws -> Map.EventDate {
                    
                     let id = try readUInt8()
                     guard id == 0x00 else {
@@ -1643,17 +1776,22 @@ private extension DataReader {
                     )
                  
                 }
-                func readRumor() throws -> Map.Rumor {
-                    fatalError()
-                }
+              
                 
                 // Add event day
                 if  blockData.count > Self.eventByteCount - 1 && blockData[42] == 1 { // why 42?
-                    let eventDate = try readEventDate()
+                    let eventDate = try readMapEventDate()
                     dateEvents.append(eventDate)
                 } else if blockData.count > Self.rumorByteCount - 1 {
-                    let rumor = try readRumor()
-                    rumors.append(rumor)
+                    let rumorByteCount = Int(blockData[8])
+                    if rumorByteCount > 0  {
+                        let rumorBytes = try read(byteCount: rumorByteCount)
+                        guard let rumorString = String(bytes: rumorBytes, encoding: .utf8) else {
+                            fatalError("Failed to get rumor string")
+                        }
+                        let rumor = Map.Rumor(rumor: rumorString)
+                        rumors.append(rumor)
+                    }
                 } else {
                     print("Warning unknown block while loading (parsing) map from binary.")
                 }
