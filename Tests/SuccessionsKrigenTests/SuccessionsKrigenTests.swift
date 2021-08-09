@@ -92,10 +92,9 @@ final class SuccessionsKrigenTests: XCTestCase {
         XCTAssertEqual(mapMetaData.description, "The King will sell you this land for 200,000 gold or you can take it by force. The choice is yours.")
         XCTAssertEqual(mapMetaData.size, .small)
         XCTAssertEqual(mapMetaData.difficulty, .hard)
-//        XCTAssertEqual(mapMetaData.victoryCondition, .)
+        XCTAssertEqual(mapMetaData.victoryCondition, .accumlateGoldAmount(200_000))
         
         /*
-         let victoryCondition: VictoryCondition
          let defeatCondition: DefeatCondition?
          let computerCanWinUsingVictoryCondition: Bool
          let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: Bool
