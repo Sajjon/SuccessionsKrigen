@@ -1,11 +1,13 @@
 import XCTest
 
-import SuccessionsKrigen
+@testable import SuccessionsKrigen
 
 final class SuccessionsKrigenTests: XCTestCase {
     
-    private let heroes2AggFileName = "heroes2.agg"
-    private let dataPath = "/Users/sajjon/Developer/Fun/Games/HoMM/HoMM_2_Gold_GAME_FILES/DATA"
+    private let heroes2AggFileName = "HEROES2.AGG"
+    private let gameFilesPath = "/Users/sajjon/Developer/Fun/Games/HoMM/HoMM_2_Gold_GAME_FILES/"
+    private lazy var dataPath = "\(gameFilesPath)/DATA"
+    private lazy var mapsPath = "\(gameFilesPath)/MAPS"
     private lazy var heroes2AggFilePath = "\(dataPath)/\(heroes2AggFileName)"
     
     func test_assert_can_open_heroes2agg_agg_file() throws {
@@ -79,4 +81,27 @@ final class SuccessionsKrigenTests: XCTestCase {
         ])
     }
     
+    func testLoadMapMetaData() throws {
+        let mapLoader = MapLoader()
+        /// Name of map is "Pandemonium", but name of file is "PANDAMON.MP2", difficulty is "HARD:
+        let pathToMap_Pandemonium = "\(mapsPath)/PANDAMON.MP2"
+        let mapMetaData = try mapLoader.loadMapMetaData(filePath: pathToMap_Pandemonium)
+        
+        XCTAssertEqual(mapMetaData.fileName, "PANDAMON.MP2")
+        XCTAssertEqual(mapMetaData.name, "Pandemonium")
+        XCTAssertEqual(mapMetaData.description, "The King will sell you this land for 200,000 gold or you can take it by force. The choice is yours.")
+        XCTAssertEqual(mapMetaData.size, .small)
+        XCTAssertEqual(mapMetaData.difficulty, .hard)
+//        XCTAssertEqual(mapMetaData.victoryCondition, .)
+        
+        /*
+         let victoryCondition: VictoryCondition
+         let defeatCondition: DefeatCondition?
+         let computerCanWinUsingVictoryCondition: Bool
+         let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: Bool
+         let isStartingWithHeroInEachCastle: Bool
+         let racesByColor: [Map.Color: Race]
+         let expansionPack: ExpansionPack?
+         */
+    }
 }

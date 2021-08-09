@@ -12,8 +12,8 @@ public struct MapLoader {
 }
 
 public struct Map: Equatable {
+    let metaData: MetaData
     let unique: Int
-    let size: Size
     let tiles: Tiles
     let heroes: Heroes
     let castles: Castles
@@ -30,8 +30,9 @@ public struct Map: Equatable {
     let ultimateArtifact: UltimateArtifact?
     
     fileprivate init(
+        metaData: MetaData,
         unique: Int,
-        size: Size,
+        
         tiles tileList: [Tile],
         heroes heroList: [Hero],
         castles castleList: [Castle],
@@ -41,9 +42,9 @@ public struct Map: Equatable {
         capturedObjects: CapturedObjects,
         signEventRiddles signEventRiddlesList: [Map.SignEventRiddle]
     ) throws {
-        precondition(tileList.count == size.rawValue * size.rawValue, "Disrepancy between size and number of tiles")
+        self.metaData = metaData
+        precondition(tileList.count == metaData.size.rawValue * metaData.size.rawValue, "Disrepancy between size and number of tiles")
         self.unique = unique
-        self.size = size
         self.tiles = .init(tiles: tileList)
         self.heroes = .init(heroes: heroList)
         self.castles = .init(castles: castleList)
@@ -68,6 +69,27 @@ public struct Map: Equatable {
         let day: Int
         let week: Int
         let month: Int
+        
+        public init(day: Int, week: Int, month: Int) {
+            self.day = day
+            self.week = week
+            self.month = month
+        }
+        
+        public enum Deadline {
+            case days
+        }
+        public static let daysPerWeek = 7
+        public static let weeksPerMonth = 4
+        public static let daysPerMonth = Self.daysPerWeek * Self.weeksPerMonth
+        public static func `in`(_ daysUntilDeadline: Int, _: Deadline) -> Self {
+ 
+            let month = daysUntilDeadline.quotientAndRemainder(dividingBy: daysPerMonth).quotient + 1
+            let week = daysUntilDeadline.quotientAndRemainder(dividingBy: weeksPerMonth).quotient + 1
+            let day = daysUntilDeadline.quotientAndRemainder(dividingBy: month * daysPerMonth + week * daysPerWeek).remainder + 1
+            
+            return .init(day: day, week: week, month: month)
+        }
     }
     public struct Tiles: Equatable {
         let tiles: [Tile]
@@ -560,6 +582,7 @@ public extension Map.Tile.Info {
 
 public enum Race: UInt8, Equatable {
     case knight, barbarian, sorceress, warlock, wizard, necromancer
+    case freeChoice
     case random
 }
 private extension Race {
@@ -756,7 +779,10 @@ private extension DataReader {
 }
 
 public extension Map {
-    enum Color: UInt8, Equatable {
+    enum Color: UInt8, Equatable, CaseIterable {
+        
+        public static var allCases: [Map.Color] = [.blue, .green, .red, .yellow, .orange, .purple]
+        
         case none = 0x00,
             blue = 0x01,
              green = 0x02,
@@ -766,6 +792,104 @@ public extension Map {
              purple = 0x20
 //             unused = 0x80,
 //             ALL = BLUE | GREEN | RED | YELLOW | ORANGE | PURPLE
+    }
+    
+}
+
+public extension Map {
+    enum VictoryCondition: Equatable {
+        case defeatAllEnemyHeroesAndTowns
+        case captureSpecificTownLocated(at: WorldPosition)
+        case defeatSpecificHeroLocated(at: WorldPosition)
+        case findSpecificArtifact(Artifact)
+        case defeatOtherTeam
+        case accumlateGoldAmount(Resource.Quantity)
+    }
+    
+    enum DefeatCondition: Equatable {
+        case loseAllHeroesAndTowns
+        case loseSpecificTownLocated(at: WorldPosition)
+        case loseSpecificHeroLocated(at: WorldPosition)
+        case runOutOfTime(deadline: Map.MapDate)
+    }
+}
+
+public extension Map.DefeatCondition {
+    enum Stripped: UInt8, Equatable, CaseIterable, CustomStringConvertible {
+        case loseAllHeroesAndTowns = 0, loseSpecificTown, loseSpecificHero, runOutOfTime
+    }
+    
+    init?(stripped: Stripped?, parameter1: Int = -1, parameter2: Int = -1) {
+        guard let condition = stripped else { return nil }
+        func position() -> WorldPosition {
+            precondition(parameter1 >= 0)
+            precondition(parameter2 >= 0)
+            return .init(x: parameter1, y: parameter2)
+        }
+        switch condition {
+        case .loseAllHeroesAndTowns: self = .loseAllHeroesAndTowns
+        case .loseSpecificTown: self = .loseSpecificTownLocated(at: position())
+        case .loseSpecificHero: self = .loseSpecificHeroLocated(at: position())
+        case .runOutOfTime:
+            let daysLeft = parameter1 - 1
+            self = .runOutOfTime(deadline: .in(daysLeft, .days))
+        }
+    }
+}
+
+public extension Map.DefeatCondition.Stripped {
+    var description: String {
+        switch self {
+        case .loseAllHeroesAndTowns: return "Lose all your heroes and towns."
+        case .loseSpecificHero: return "Lose a specific hero."
+        case .loseSpecificTown: return "Lose a specific town."
+        case .runOutOfTime: return "Run out of time. Fail to win by a certain point."
+        }
+    }
+}
+
+public extension Map.VictoryCondition {
+    
+    init(stripped: Stripped, parameter1: Int = -1, parameter2: Int = -1) {
+        func position() -> WorldPosition {
+            precondition(parameter1 >= 0)
+            precondition(parameter2 >= 0)
+            return .init(x: parameter1, y: parameter2)
+        }
+        switch stripped {
+        case .accumlateGoldAmount:
+            precondition(parameter1 >= 0)
+            self = .accumlateGoldAmount(parameter1 * 1000)
+            
+        case .captureSpecificTown: self = .captureSpecificTownLocated(at: position())
+        case .findSpecificArtifact:
+            precondition(parameter1 >= 0)
+            guard let artifact = Artifact(rawValue: UInt8(parameter1 - 1)) else {
+                fatalError("Unknown artifact")
+            }
+            self = .findSpecificArtifact(artifact)
+        case .defeatSpecificHero: self = .defeatSpecificHeroLocated(at: position())
+        case .defeatAllEnemyHeroesAndTowns: self = .defeatAllEnemyHeroesAndTowns
+        case .defeatOtherTeam: self = .defeatOtherTeam
+        }
+    }
+    
+    enum Stripped: UInt8, Equatable, CaseIterable, CustomStringConvertible {
+        case defeatAllEnemyHeroesAndTowns = 0, captureSpecificTown, defeatSpecificHero, findSpecificArtifact, defeatOtherTeam, accumlateGoldAmount
+    }
+
+}
+
+public extension Map.VictoryCondition.Stripped {
+    var description: String {
+        switch self {
+        case .defeatAllEnemyHeroesAndTowns: return "Defeat all enemy heroes and towns."
+        case .captureSpecificTown: return "Capture a specific town."
+        case .defeatSpecificHero: return "Defeat a specific hero."
+        case .findSpecificArtifact: return "Find a specific artifact."
+        case .defeatOtherTeam: return "Your side defeats the opposing side."
+        case .accumlateGoldAmount: return "Accumulate a large amount of gold."
+        }
     }
 }
 
@@ -815,6 +939,35 @@ public extension Map {
     }
 }
 
+public extension Map {
+    struct MetaData: Equatable {
+        let fileName: String
+        let name: String
+        let description: String
+        let size: Size
+        let difficulty: Difficulty
+        let victoryCondition: VictoryCondition
+        let defeatCondition: DefeatCondition?
+        let computerCanWinUsingVictoryCondition: Bool
+        let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: Bool
+        let isStartingWithHeroInEachCastle: Bool
+        let racesByColor: [Map.Color: Race]
+        let expansionPack: ExpansionPack?
+    }
+    
+    enum Difficulty: Int, Equatable, CaseIterable {
+        case easy = 0, normal, hard, expert, impossible
+    }
+}
+
+public struct ExpansionPack: Equatable {
+    let name: String
+    let mapFileExtension: String
+}
+public extension ExpansionPack {
+    static let princeOfLoyalty = Self(name: "Price of loyalty", mapFileExtension: "MX2")
+}
+
 public extension MapLoader {
     
     
@@ -827,25 +980,147 @@ public extension MapLoader {
         case unrecognizedRace(Race.RawValue)
     }
     
-    func loadMap(filePath mapFilePath: String, gameDifficulty: Game.Difficulty) throws -> Map {
+ 
+    
+    func loadMapMetaData(filePath mapFilePath: String) throws -> Map.MetaData {
         guard let contentsRaw = FileManager.default.contents(atPath: mapFilePath) else {
             throw Error.fileNotFound
         }
-        var dataReader = DataReader(data: contentsRaw)
+        let fileName = String(mapFilePath.split(separator: "/").last!)
+        return try loadMapMetaData(rawData: contentsRaw, fileName: fileName)
+    }
+    
+    private static let mapNameByteCount = 16
+    private static let mapDescriptionByteCount = 143
+    
+    func loadMapMetaData(rawData contentsRaw: Data, fileName: String) throws -> Map.MetaData {
+        let dataReader = DataReader(data: contentsRaw)
 
         // Check (mp2, mx2) ID
         guard try dataReader.readUInt32(endianess: .big) == Self.homm2MapFileIdentifier else {
             throw Error.notHomm2MapFile
         }
         
-        // Read unique
-        let unique: Int = try {
-            try dataReader.seek(to: contentsRaw.count - 4)
-            let unique = try dataReader.readUInt32()
-            // Reverse seek... uh this is terrible code! Plz fix me FFS... seriously.
-            dataReader = DataReader(data: contentsRaw)
-            return Int(unique)
+        
+        let difficultyRaw = Int(try dataReader.readUInt16())
+        let difficulty = Map.Difficulty(rawValue: difficultyRaw) ?? .normal
+        
+        let width = Int(try dataReader.readInt8())
+        let height = Int(try dataReader.readInt8())
+        guard width == height else { throw Error.mapMustBeSquared }
+        let size = Map.Size(rawValue: width)!
+ 
+        
+        let kingdomColors: [Map.Color] = try Map.Color.allCases.compactMap { color in
+            guard try dataReader.readUInt8() != 0 else {
+                return nil
+            }
+            return color
+        }
+        
+        let humanPlayableColors: [Map.Color] = try Map.Color.allCases.compactMap { color in
+            guard try dataReader.readUInt8() != 0 else {
+                return nil
+            }
+            return color
+        }
+        
+        let computerPlayableColors: [Map.Color] = try Map.Color.allCases.compactMap { color in
+            guard try dataReader.readUInt8() != 0 else {
+                return nil
+            }
+            return color
+        }
+        
+        assert(humanPlayableColors.allSatisfy({ kingdomColors.contains($0) }))
+        assert(computerPlayableColors.allSatisfy({ kingdomColors.contains($0) }))
+        
+        
+        try dataReader.seek(to: 0x1D)
+        let victoryConditionRaw = try dataReader.readUInt8()
+        guard let victoryConditionStripped = Map.VictoryCondition.Stripped(rawValue: victoryConditionRaw) else {
+            fatalError("Unrecognized victory condition")
+        }
+   
+        
+        let computerCanWinUsingVictoryCondition = try dataReader.readUInt8() != 0
+        
+        let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns = try dataReader.readUInt8() != 0
+        let victoryCondition = Map.VictoryCondition(
+            stripped: victoryConditionStripped,
+            parameter1: .init(try dataReader.readUInt16()),
+            parameter2: .init(try dataReader.readUInt16())
+        )
+       
+        
+        // Defeat condition
+        try dataReader.seek(to: 0x22)
+    
+        let defeatConditionRaw = try dataReader.readUInt8()
+
+        let defeatConditionStripped: Map.DefeatCondition.Stripped? = .init(rawValue: defeatConditionRaw)
+        let defeatCondition: Map.DefeatCondition? = try {
+            let defeatConditionParameter1 = try dataReader.readUInt16()
+            try dataReader.seek(to: 0x2e)
+            let defeatConditionParameter2 = try dataReader.readUInt16()
+            return Map.DefeatCondition(
+                stripped: defeatConditionStripped,
+                parameter1: .init(defeatConditionParameter1),
+                parameter2: .init(defeatConditionParameter2)
+            )
         }()
+        
+        // start with hero
+        try dataReader.seek(to: 0x25)
+        let isStartingWithHeroInEachCastle = try dataReader.readUInt8() == 0
+    
+        
+        // race color
+        let racesByColor: [Map.Color: Race] = try Dictionary(
+            uniqueKeysWithValues: Map.Color.allCases.map { color -> (Map.Color, Race) in
+                let raceRaw = try dataReader.readUInt8()
+                let race = Race(rawValue: raceRaw) ?? .freeChoice
+                return (color, race)
+            }
+        )
+        
+        // Name
+        try dataReader.seek(to: 0x3a)
+        let name = try dataReader.readString(byteCount: Self.mapNameByteCount)
+        
+        // Desription
+        try dataReader.seek(to: 0x76)
+        let description = try dataReader.readString(byteCount: Self.mapDescriptionByteCount)
+        
+        let expansionPack: ExpansionPack? = fileName.split(separator: ".").last! == ExpansionPack.princeOfLoyalty.mapFileExtension ? ExpansionPack.princeOfLoyalty : nil
+        return .init(
+            fileName: fileName,
+            name: name,
+            description: description,
+            size: size,
+            difficulty: difficulty,
+            victoryCondition: victoryCondition,
+            defeatCondition: defeatCondition,
+            computerCanWinUsingVictoryCondition: computerCanWinUsingVictoryCondition,
+            victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns,
+            isStartingWithHeroInEachCastle: isStartingWithHeroInEachCastle,
+            racesByColor: racesByColor,
+            expansionPack: expansionPack
+        )
+    }
+    
+    func loadMap(filePath mapFilePath: String) throws -> Map {
+        guard let contentsRaw = FileManager.default.contents(atPath: mapFilePath) else {
+            throw Error.fileNotFound
+        }
+
+        let metaData = try loadMapMetaData(filePath: mapFilePath)
+        let dataReader = DataReader(data: contentsRaw)
+
+        
+        // Read unique
+        try dataReader.seek(to: contentsRaw.count - 4)
+        let unique = Int(try dataReader.readUInt32())
         
 
         try dataReader.seek(to: Self.offsetData - 2 * 4) /* From `fheroes2`... why `- 2 * 4` ? */
@@ -928,13 +1203,13 @@ public extension MapLoader {
             tiles: mapTiles,
             objects: objects,
             simpleCastles: castlesSimple,
-            gameDifficulty: gameDifficulty,
+            difficulty: metaData.difficulty,
             kingdoms: &kingsdoms
         )
         
         let map = try Map(
+            metaData: metaData,
             unique: unique,
-            size: mapSize,
             tiles: mapTiles,
             heroes: castlesHeroesEventsRumorsEtc.heroes,
             castles: castlesHeroesEventsRumorsEtc.castles,
@@ -1110,7 +1385,7 @@ public extension Hero {
         case .warlock: return .warlock(.random())
         case .wizard: return .wizard(.random())
         case .necromancer: return .necromancer(.random())
-        case .random:
+        case .random, .freeChoice:
             fatalError()
         }
     }
@@ -1130,15 +1405,6 @@ public extension Hero {
 extension CaseIterable {
     static func random() -> Self {
         allCases.randomElement()!
-    }
-}
-
-public struct Game: Equatable {
-    
-}
-public extension Game {
-    enum Difficulty: Int, Equatable, CaseIterable {
-        case easy, normal, hard, expert, impossible
     }
 }
 
@@ -1221,7 +1487,7 @@ private extension DataReader {
         tiles: [Map.Tile],
         objects: [Map.Object],
         simpleCastles: [Map.Castle.Simple],
-        gameDifficulty: Game.Difficulty,
+        difficulty: Map.Difficulty,
         kingdoms: inout [Kingdom]
     ) throws -> Map.CastlesHeroesEventsRumorsEtc {
         
@@ -1438,7 +1704,7 @@ private extension DataReader {
                 buildings |= Map.Castle.Building.dwellingLevel1NonUpgraded.rawValue
                 
                 let probabilityOfSecondDwelling: UInt32
-                switch gameDifficulty {
+                switch difficulty {
                 case .easy:
                     probabilityOfSecondDwelling = 75
                 case .normal:

@@ -9,34 +9,32 @@ import Foundation
 
 
 public final class DataReader {
-    private var source: Data
-    private let originalSize: Int
+    private let source: Data
     public private(set) var offset: Int = 0
     public init(data: Data) {
         source = data
-        originalSize = data.count
     }
 }
 
 
 private extension DataReader {
-    func parse(byteCount: Int) -> Data {
-        source.droppedFirst(byteCount)
-    }
-    
-    
+
     func readUInt<U>(byteCount: Int, endianess: Endianess) throws -> U where U: FixedWidthInteger & UnsignedInteger {
         let bytes = try read(byteCount: byteCount)
 
-        let littleEndianInt = bytes.withUnsafeBytes {
-            $0.load(as: U.self)
-        }
+       
         
         switch endianess {
         case .little:
-            return littleEndianInt
+            return bytes.withUnsafeBytes {
+                $0.load(as: U.self)
+            }
         case .big:
-            fatalError("what to do?")
+            var endianessSwappedBytes = bytes
+            endianessSwappedBytes.reverse()
+            return endianessSwappedBytes.withUnsafeBytes {
+                $0.load(as: U.self)
+            }
         }
     }
     
@@ -99,11 +97,17 @@ public extension DataReader {
         guard source.count >= byteCount else {
             throw Error.outOfBounds
         }
+        let startIndex = Data.Index(offset)
+        let endIndex = startIndex.advanced(by: byteCount)
+        assert(endIndex <= source.count, "'source.count': \(source.count), but 'endIndex': \(endIndex)")
+        self.offset += byteCount
+        return Data(source[startIndex..<endIndex])
         
-        let droppedDataToReturn = source.droppedFirst(byteCount)
-        offset += byteCount
-        assert(droppedDataToReturn.count == byteCount)
-        return droppedDataToReturn
+//
+//        let bytes =  parse(byteCount: byteCount) //source.droppedFirst(byteCount)
+////        offset += byteCount
+//        assert(droppedDataToReturn.count == byteCount)
+//        return droppedDataToReturn
     }
     
     func readInt(endianess: Endianess = .little) throws -> Int {
@@ -118,21 +122,22 @@ public extension DataReader {
         return float
     }
     
-    func seek(to offset: Int) throws {
-        guard offset < originalSize else {
+    func seek(to targetOffset: Int) throws {
+        guard targetOffset < source.count else {
             throw Error.outOfBounds
         }
-        guard offset >= self.offset else {
-            throw Error.outOfBounds
-        }
-        guard offset != self.offset else { return }
-        let byteCount = offset - self.offset
-        
-        // Discard data
-        let _ = try read(byteCount: byteCount)
-        
-        assert(self.offset == offset)
-        assert(source.count + self.offset == originalSize)
+//        guard offset >= self.offset else {
+//            throw Error.outOfBounds
+//        }
+//        guard offset != self.offset else { return }
+//        let byteCount = offset - self.offset
+//
+//        // Discard data
+//        let _ = try read(byteCount: byteCount)
+//
+//        assert(self.offset == offset)
+//        assert(source.count + self.offset == originalSize)
+        self.offset = targetOffset
     }
     
     func skip(byteCount: Int) throws {
@@ -160,5 +165,15 @@ public extension DataReader {
         return string
     }
     
-    
+    func readString(byteCount: Int, encoding: String.Encoding = .utf8) throws -> String {
+        let bytes = try read(byteCount: byteCount)
+        guard let nonTrimmedString = String(bytes: bytes, encoding: encoding) else {
+            fatalError("no string")
+        }
+        return nonTrimmedString.trimmingCharacters(in: .null)
+    }
+}
+
+private extension CharacterSet {
+    static let null = Self([.init(0x00)])
 }

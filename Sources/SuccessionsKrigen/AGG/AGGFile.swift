@@ -613,7 +613,7 @@ private extension AGGFile {
     func loadOriginal(icon: Icon) throws {
         let fileName = icon.iconFileName
         let body = try read(fileName: fileName)
-        var dataReader = DataReader(data: body)
+        let dataReader = DataReader(data: body)
         
         let count = Int(try dataReader.readUInt16())
         let blockSize = try dataReader.readUInt32()
@@ -622,13 +622,7 @@ private extension AGGFile {
         
         let sprites: [Sprite] = try (0..<count).map { i throws -> Sprite in
             let targetOffset = Self.headerSize + i * 13
-            if targetOffset < dataReader.offset {
-                // uh this is terrible code! Plz fix me FFS... seriously.
-                dataReader = DataReader(data: body)
-                try! dataReader.seek(to: targetOffset)
-            } else {
-                try dataReader.seek(to: targetOffset)
-            }
+            try dataReader.seek(to: targetOffset)
             let header1 = try dataReader.readIconHeader()
             var sizeData: UInt32 = 0
             if i + 1 != count {
