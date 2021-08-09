@@ -9,7 +9,7 @@ import Foundation
 
 private let paletteFileName = "KB.PAL"
 
-public extension AGGFile {
+internal extension AGGFile {
     func dataForPalette() -> Data {
         do {
             let rawPalette = try read(fileName: paletteFileName)
@@ -24,3 +24,4 @@ public extension AGGFile {
         
     }
 }
+

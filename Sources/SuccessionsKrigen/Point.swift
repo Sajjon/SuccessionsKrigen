@@ -8,7 +8,7 @@
 import Foundation
 
 
-public struct Point: Equatable {
+public struct Point: Equatable, Hashable {
     public let x: Int
     public let y: Int
     public init(x: Int, y: Int) {

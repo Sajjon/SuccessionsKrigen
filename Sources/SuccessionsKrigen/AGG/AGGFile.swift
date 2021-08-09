@@ -33,6 +33,30 @@ public struct AGGFile {
     private let files: [String: FileMetadata]
     private let rawData: Data
     
+    public lazy var palette32Bit: [UInt32] = {
+        let paletteBytes = dataForPalette()
+        
+        let palette32Bit: [UInt32] = (0..<256).map { i in
+            var offset = 0
+            func getValue() -> UInt8 {
+                defer { offset += 1 }
+                return paletteBytes[i * 3 + offset]
+            }
+            let red = getValue()
+            let green = getValue()
+            let blue = getValue()
+            var data = Data()
+            data.append(red)
+            data.append(green)
+            data.append(blue)
+            data.append(255) // alpha
+            data.reverse() // fix endianess
+            return data.withUnsafeBytes { $0.load(as: UInt32.self) }
+        }
+        
+        return palette32Bit
+    }()
+    
     /// Byte count of the raw agg file.
     public var size: Int { rawData.count }
     
@@ -119,7 +143,7 @@ public extension AGGFile {
     }
 }
 
-public struct Size: Equatable {
+public struct Size: Equatable, Hashable {
     public let width: Int
     public let height: Int
     public init(width: Int, height: Int) {
@@ -153,8 +177,8 @@ public struct Rect {
     }
 }
 
-public struct Sprite: Equatable {
-    public enum SpriteType: Equatable {
+public struct Sprite: Equatable, Hashable {
+    public enum SpriteType: Equatable, Hashable {
         case single
         case series(index: Int, ofTotal: Int)
     }
