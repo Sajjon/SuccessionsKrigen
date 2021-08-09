@@ -580,11 +580,34 @@ public extension Map.Tile.Info {
 
 }
 
-public enum Race: UInt8, Equatable {
+public enum Race: UInt8, Equatable, CustomStringConvertible {
     case knight, barbarian, sorceress, warlock, wizard, necromancer
+    
+    /// "multi"
     case freeChoice
     case random
+    
+    /// "none"
+    case neutral
 }
+
+public extension Race {
+    
+    var description: String {
+        switch self {
+        case .knight: return "Knight"
+        case .barbarian: return "Barbarian"
+        case .sorceress: return "Sorceress"
+        case .warlock: return "Warlock"
+        case .wizard: return "Wizard"
+        case .necromancer: return "Necromancer"
+        case .freeChoice: return "FreeChoice"
+        case .random: return "Random"
+        case .neutral: return "Neutral"
+        }
+    }
+}
+
 private extension Race {
     static let castleIncrement: UInt8 = 0x80
 }
@@ -779,7 +802,7 @@ private extension DataReader {
 }
 
 public extension Map {
-    enum Color: UInt8, Equatable, CaseIterable {
+    enum Color: UInt8, Equatable, CaseIterable, CustomStringConvertible {
         
         public static var allCases: [Map.Color] = [.blue, .green, .red, .yellow, .orange, .purple]
         
@@ -794,6 +817,21 @@ public extension Map {
 //             ALL = BLUE | GREEN | RED | YELLOW | ORANGE | PURPLE
     }
     
+}
+
+public extension Map.Color {
+    
+    var description: String {
+        switch self {
+        case .none: return "None"
+        case .blue: return "Blue"
+        case .green: return "Green"
+        case .red: return "Red"
+        case .yellow: return "Yellow"
+        case .orange: return "Orange"
+        case .purple: return "Purple"
+        }
+    }
 }
 
 public extension Map {
@@ -1079,7 +1117,7 @@ public extension MapLoader {
         let racesByColor: [Map.Color: Race] = try Dictionary(
             uniqueKeysWithValues: Map.Color.allCases.map { color -> (Map.Color, Race) in
                 let raceRaw = try dataReader.readUInt8()
-                let race = Race(rawValue: raceRaw) ?? .freeChoice
+                let race = Race(rawValue: raceRaw) ?? .neutral
                 return (color, race)
             }
         )
@@ -1385,7 +1423,7 @@ public extension Hero {
         case .warlock: return .warlock(.random())
         case .wizard: return .wizard(.random())
         case .necromancer: return .necromancer(.random())
-        case .random, .freeChoice:
+        case .random, .freeChoice, .neutral:
             fatalError()
         }
     }

@@ -22,6 +22,17 @@ extension XCTestCase {
         }
     }
     
+    func XCTAssertEqualDictionaries<Key, Value>(
+        _ lhs: [Key: Value], _ rhs: [Key: Value],
+        line: UInt = #line,
+        file: StaticString = #file
+    ) where Key: Hashable, Value: Equatable {
+        XCTAssertEqual(Set(lhs.keys), Set(rhs.keys), "Different keys found in dictionaries", file: file, line: line)
+        lhs.keys.forEach { key in
+            XCTAssertEqual(lhs[key], rhs[key], "Values for key: '\(key)' differs, `\(lhs[key]!)` != `\(rhs[key]!)`", file: file, line: line)
+        }
+    }
+    
     private func forAll<Item>(_ items: [Item], compareElemenets: (Item, Item) -> Void) where Item: Equatable {
         var lastIndex: Array<Item>.Index?
         for index in items.indices {

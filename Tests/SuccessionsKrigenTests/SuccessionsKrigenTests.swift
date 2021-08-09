@@ -93,14 +93,19 @@ final class SuccessionsKrigenTests: XCTestCase {
         XCTAssertEqual(mapMetaData.size, .small)
         XCTAssertEqual(mapMetaData.difficulty, .hard)
         XCTAssertEqual(mapMetaData.victoryCondition, .accumlateGoldAmount(200_000))
+        XCTAssertEqual(mapMetaData.defeatCondition, .loseSpecificTownLocated(at: .init(x: 19, y: 4)))
+        XCTAssertEqual(mapMetaData.computerCanWinUsingVictoryCondition, false)
+        XCTAssertEqual(mapMetaData.victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns, true)
+        XCTAssertEqual(mapMetaData.isStartingWithHeroInEachCastle, false)
+        XCTAssertEqualDictionaries(mapMetaData.racesByColor, [
+            .blue: .random,
+            .green: .random,
+            .red: .random,
+            .yellow: .necromancer,
+            .orange: .neutral,
+            .purple: .neutral
+        ])
         
-        /*
-         let defeatCondition: DefeatCondition?
-         let computerCanWinUsingVictoryCondition: Bool
-         let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: Bool
-         let isStartingWithHeroInEachCastle: Bool
-         let racesByColor: [Map.Color: Race]
-         let expansionPack: ExpansionPack?
-         */
+        XCTAssertNil(mapMetaData.expansionPack)
     }
 }
