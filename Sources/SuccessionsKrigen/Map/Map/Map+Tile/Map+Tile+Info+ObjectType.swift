@@ -11,7 +11,7 @@ public extension Map.Tile.Info {
     
     /// Type of object. Most of them have two versions, one with suffix `N` which I dunno what it stands for...
     /// first bit indicates if you can interact with object
-    enum ObjectType: UInt8, Equatable, CustomStringConvertible {
+    enum ObjectType: UInt8, Equatable {
         case nothing = 0x00,
              alchemyLabN = 0x01,
              skeletonN = 0x04,
@@ -278,15 +278,16 @@ public extension Map.Tile.Info {
     
 }
 
-// MARK: CustomStringConvertible
-public extension Map.Tile.Info.ObjectType {
-    var description: String {
-        switch self {
-        case .randomCastle: return "Random Castle"
-        default: fatalError("not done yet: \(self), rawValue: \(rawValue), rawValueHex: \(String(rawValue, radix: 16, uppercase: true))")
-        }
-    }
-}
+//// MARK: CustomStringConvertible
+//public extension Map.Tile.Info.ObjectType {
+//    var description: String {
+//        switch self {
+//        case .randomCastle: return "Random Castle"
+//        case .castle: return "Castle"
+//        default: fatalError("not done yet, rawValue: \(rawValue), rawValueHex: \(String(rawValue, radix: 16, uppercase: true))")
+//        }
+//    }
+//}
 
 // MARK: Public
 public extension Map.Tile.Info.ObjectType {

@@ -868,6 +868,7 @@ private extension DataReader {
             let blockSize = Int(try readUInt16())
             let blockData = try read(byteCount: blockSize)
             let shaHashBlockdata = sha256Hex(data: blockData)
+            let blockDataReader = DataReader(data: blockData)
             print("ii=\(ii), offset: \(self.offset), blockdata shahash: \(shaHashBlockdata)")
             
             var tileFound: Map.Tile?
@@ -885,7 +886,7 @@ private extension DataReader {
             }
             var isRandomCastle = false
             if let foundTile = tileFound {
-                print("ii=\(ii) found tile: \(foundTile.debugDescription)")
+                print("ii=\(ii) found tile: \(foundTile.debugDescription), currentOffset: \(offset)")
                 switch foundTile.info.objectType {
                 case .randomTown, .randomCastle:
                     // Add random castle
@@ -899,9 +900,9 @@ private extension DataReader {
                     guard let simpleCastle = simpleCastles.first(where: { $0.worldPosition == foundTile.worldPosition }) else {
                         fatalError("Did not find castle at expected position")
                     }
-                    var castle = try readCastle(simpleCastle: simpleCastle, difficulty: difficulty)
+                    var castle = try blockDataReader.readCastle(simpleCastle: simpleCastle, difficulty: difficulty)
                     if isRandomCastle {
-                        castle.setRandomSprite()
+//                        castle.setRandomSprite()
                     }
                     castles.append(castle)
                 case .jail:
@@ -924,7 +925,7 @@ private extension DataReader {
                     default: fatalError()
                     }
                     let heroType = Hero.randomFreeman(race: race)
-                    let hero = try readHero(heroType: heroType, worldPosition: foundTile.worldPosition)
+                    let hero = try blockDataReader.readHero(heroType: heroType, worldPosition: foundTile.worldPosition)
                     heroes.append(hero)
                 case .heroes:
                     guard blockSize == Self.heroesByteCount else {
@@ -952,19 +953,19 @@ private extension DataReader {
                 case .sign, .bottle:
                     if blockSize > Self.signByteCount - 1 && blockData[0] == 0x01 {
                         
-                        let sign = try readMapSign(worldPosition: foundTile.worldPosition)
+                        let sign = try blockDataReader.readMapSign(worldPosition: foundTile.worldPosition)
                         signEventRiddles.append(sign)
                     }
                 case .event:
                     if blockSize > Self.eventByteCount - 1 && blockData[0] == 0x01 {
                         
-                        let event = try readMapEvent(worldPosition: foundTile.worldPosition)
+                        let event = try blockDataReader.readMapEvent(worldPosition: foundTile.worldPosition)
                         signEventRiddles.append(event)
                     }
                 case .sphinx:
                     if blockSize > Self.riddleByteCount - 1 && blockData[0] == 0x00 {
                         
-                        let riddle = try readMapRiddle(worldPosition: foundTile.worldPosition)
+                        let riddle = try blockDataReader.readMapRiddle(worldPosition: foundTile.worldPosition)
                         signEventRiddles.append(riddle)
                     }
                 default:
@@ -977,12 +978,12 @@ private extension DataReader {
                 
                 // Add event day
                 if  blockData.count > Self.eventByteCount - 1 && blockData[42] == 1 { // why 42?
-                    let eventDate = try readMapEventDate()
+                    let eventDate = try blockDataReader.readMapEventDate()
                     dateEvents.append(eventDate)
                 } else if blockData.count > Self.rumorByteCount - 1 {
                     let rumorByteCount = Int(blockData[8])
                     if rumorByteCount > 0  {
-                        let rumorBytes = try read(byteCount: rumorByteCount)
+                        let rumorBytes = try blockDataReader.read(byteCount: rumorByteCount)
                         guard let rumorString = String(bytes: rumorBytes, encoding: .utf8) else {
                             fatalError("Failed to get rumor string")
                         }
