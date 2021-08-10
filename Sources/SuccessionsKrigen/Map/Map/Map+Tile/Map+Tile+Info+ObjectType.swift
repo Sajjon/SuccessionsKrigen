@@ -29,7 +29,7 @@ public extension Map.Tile.Info {
              minesN = 0x17,
              obeliskN = 0x19,
              oasisN = 0x1a,
-             coastN = 0x1c,
+             coast = 0x1c,
              sawmillN = 0x1d,
              oracleN = 0x1e,
              
@@ -278,11 +278,40 @@ public extension Map.Tile.Info {
     
 }
 
+// MARK: CustomStringConvertible
 public extension Map.Tile.Info.ObjectType {
     var description: String {
         switch self {
         case .randomCastle: return "Random Castle"
         default: fatalError("not done yet: \(self), rawValue: \(rawValue), rawValueHex: \(String(rawValue, radix: 16, uppercase: true))")
+        }
+    }
+}
+
+// MARK: Public
+public extension Map.Tile.Info.ObjectType {
+    var isActionObject: Bool {
+        // check if first bit is set
+        guard rawValue >= 128 else { return false }
+        
+        switch self {
+        case .event, .stablesN, .alchemyTowerN, .reefs: return false
+        default: return true
+        }
+    }
+    
+    var actionObjectDirection: Map.Tile.Direction {
+        switch self {
+        case .jail, .barrier, .artifact, .resource, .treasureChest, .monster, .ancientLamp, .campfire, .shipwreckSurviror, .flotsam, .waterChest, .buoy, .whirlpool, .bottle, .coast, .boat: return .all
+        case .shipwreck:
+            // Logically right tile from Shipwreck is ocean so it could be safe to allow it.
+            return [.center, .left, .bottomRow]
+            
+        case .derelictShip, .trollBridge, .archerHouse, .doctorHut,. dwarfCottage, .thatchedHut, .fountain, .idol,. lighthouse, .obelisk, .sign, .watchTower, .gazebo, .magicWell, .observationTower, .peasantHut, .stoneLiths, .standingStones, .goblinHut, .shrine1, .shrine2, .shrine3, .treeHouse, .artesianSpring, .skeleton, .treeKnowledge, .oracle, .oasis, .leanTo, .magicGarden, .wagon, .travellerTent, .alchemyTower, .hutMagi, .eyeMagi, .mercenaryCamp, .windmill, .wateringHole, .tradingPost, .excavation, .desertTent, .daemonCave, .pyramid, .fort, .ruins, .hillfort, .freemanFoundry, .sawmill, .treeCity, .sphinx, .temple, .faerieRing, .barrowMounds, .stables, .abandonedMine, .mines, .alchemyLab, .cave, .cityDead, .graveyard, .dragonCity, .xanadu, .halflingHole, .wagonCamp, .waterAltar, .airAltar, .fireAltar, .earthAltar, .arena, .sirens, .mermaid, .waterWheel, .magellanMaps:
+            return [.centerRow, .bottomRow]
+        case .castle: return [.center, .bottom]
+        default: fatalError("Did you add a new action object? Please add its passability (Direction)!, got uncovered objectType: \(self)")
+            
         }
     }
 }

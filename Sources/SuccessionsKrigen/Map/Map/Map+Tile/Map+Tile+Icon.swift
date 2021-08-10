@@ -7,15 +7,15 @@
 
 import Foundation
 
-
-
-extension Map.Tile {
-    func getIconObject(tileset: Int) -> Icon? {
-        let tilesetValue = tileset >> 2
+extension Icon {
+    static func fromObjectTileset(_ objectTileset: Int) -> Icon? {
+        let tilesetValue = objectTileset >> 2
            
         switch tilesetValue {
         case 38: return .randomCastle
-        default: fatalError("not done yet: tilesetValue \(tileset), tilesetValue: \(tilesetValue)")
+        case 36: return .castleBase
+        default: fatalError("not done yet: tilesetValue \(objectTileset), tilesetValue: \(tilesetValue)")
         }
     }
 }
+

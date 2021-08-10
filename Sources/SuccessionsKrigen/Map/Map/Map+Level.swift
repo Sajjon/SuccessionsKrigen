@@ -29,10 +29,42 @@ public extension Map {
 
 public extension Map.Level {
     /// Not to be confused with `Map.AddOn`
-    struct AddOn: Equatable {
+    struct AddOn: Equatable, CustomDebugStringConvertible {
         let level: Int
         let unique: Int
         let object: Int
         let index: Int
+    }
+}
+
+public extension Map.Level.AddOn {
+    
+    var objectTileset: Int { object }
+    
+    var icon: Icon {
+        guard let icon = Icon.fromObjectTileset(objectTileset) else {
+            fatalError("failed to get icon from objectTileset: \(objectTileset)")
+        }
+        return icon
+    }
+    
+    var iconName: String {
+        icon.iconFileName
+    }
+}
+
+public extension Map.Level.AddOn {
+    func debugString(prefix: String = "") -> String {
+        """
+        \(prefix)
+        unique          : \(unique)
+        tileset         : \(objectTileset), (\(icon) <\(iconName)>)
+        index:          : \(index)
+        level           : \(level), (\(level % 4))
+        """
+    }
+    
+    var debugDescription: String {
+        debugString()
     }
 }

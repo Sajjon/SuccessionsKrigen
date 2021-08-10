@@ -36,7 +36,8 @@ public extension Icon {
         MONH0028,
         OBJNTWRD,
         MONS32,
-        SHNGANIM
+        SHNGANIM,
+        OBJNTWBA
     }
 }
 
@@ -50,6 +51,7 @@ public extension Icon.Raw {
         case .OBJNTWRD: return .randomCastle
         case .MONS32: return .creaturesSpriteSet
         case .SHNGANIM: return .mainMenuShiningAnimationsSpriteSet
+        case .OBJNTWBA: return .castleBase
         }
     }
 }
@@ -60,6 +62,7 @@ public extension Icon.Raw {
 public enum Icon: Equatable, Hashable {
     case mainMenuBackground
     case randomCastle
+    case castleBase
     case phoenix
     case phoenixSpriteSet
     case mainMenuButtonsSpriteSet
