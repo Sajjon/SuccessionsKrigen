@@ -85,7 +85,8 @@ final class SuccessionsKrigenTests: XCTestCase {
         let mapLoader = MapLoader()
         /// Name of map is "Pandemonium", but name of file is "PANDAMON.MP2", difficulty is "HARD:
         let pathToMap_Pandemonium = "\(mapsPath)/PANDAMON.MP2"
-        let mapMetaData = try mapLoader.loadMapMetaData(filePath: pathToMap_Pandemonium)
+        let map = try mapLoader.loadMap(filePath: pathToMap_Pandemonium)
+        let mapMetaData = map.metaData
         
         XCTAssertEqual(mapMetaData.fileName, "PANDAMON.MP2")
         XCTAssertEqual(mapMetaData.name, "Pandemonium")

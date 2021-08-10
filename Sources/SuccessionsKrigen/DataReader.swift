@@ -10,9 +10,11 @@ import Foundation
 
 public final class DataReader {
     private let source: Data
+    public let sourceSize: Int
     public private(set) var offset: Int = 0
     public init(data: Data) {
         source = data
+        sourceSize = data.count
     }
 }
 

@@ -9,14 +9,18 @@ import Foundation
 
 
 public struct Point: Equatable, Hashable {
-    public let x: Int
-    public let y: Int
-    public init(x: Int, y: Int) {
+    
+    public let x: Value
+    public let y: Value
+    public init(x: Value, y: Value) {
         self.x = x
         self.y = y
     }
 }
 
 public extension Point {
+    
+    typealias Value = Int
+    
     static let zero = Self(x: 0, y: 0)
 }
