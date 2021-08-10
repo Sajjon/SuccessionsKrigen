@@ -10,7 +10,7 @@ import Foundation
 
 public extension Map {
     struct CapturedObject: Equatable {
-        let objectMapType: Map.Tile.Info.MapObjectType
+        let objectMapType: Map.Tile.Info.ObjectType
         let color: Color
         let guardians: Troop?
     }
@@ -26,7 +26,7 @@ public extension Map {
 public extension Map.CapturedObjects {
     
     func capture(
-        objectOfType: Map.Tile.Info.MapObjectType,
+        objectOfType: Map.Tile.Info.ObjectType,
         at worldPosition: WorldPosition,
         by color: Map.Color
     ) -> Self {

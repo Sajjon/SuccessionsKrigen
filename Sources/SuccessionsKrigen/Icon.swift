@@ -10,31 +10,64 @@ import Foundation
 public extension Icon {
     
     var iconFileName: String {
-       "\(self).ICN"
+        raw.rawValue + ".ICN"
     }
     
+    var raw: Raw {
+        guard let raw = Raw.allCases.first(where: { $0.icon == self }) else {
+            fatalError("failed to find raw for icon: \(self)")
+        }
+        return raw
+    }
+    
+    var rawValue: Raw.RawValue { raw.rawValue }
 }
 
-// MARK: Aliases
+// MARK: Raw
 public extension Icon {
-
-    /// Main menu buttons ("BTNSHNGL")
+    
     /// Info: https://thaddeus002.github.io/fheroes2-WoT/infos/ICN_Reference.html
     /// More info: https://sourceforge.net/p/fheroes2/discussion/335992/thread/e4eeeb7b/#7197
-    static let mainMenuButtons = BTNSHNGL
+    enum Raw: String, Equatable, CaseIterable {
+        
+        case BTNSHNGL,
+        HEROES,
+        PHOENIX,
+        MONH0028,
+        OBJNTWRD,
+        MONS32,
+        SHNGANIM
+    }
+}
 
-    /// Main menu background image ("HEROES")
-    static let mainMenuBackground = HEROES
-
-    // Image files for all creatues ("MONS32")
-    static let allCreatures = MONS32
-    
-    static let phoenixSmall = MONH0028
+public extension Icon.Raw {
+    var icon: Icon {
+        switch self {
+        case .BTNSHNGL: return .mainMenuButtonsSpriteSet
+        case .HEROES: return .mainMenuBackground
+        case .PHOENIX: return .phoenix
+        case .MONH0028: return .phoenixSpriteSet
+        case .OBJNTWRD: return .randomCastle
+        case .MONS32: return .creaturesSpriteSet
+        case .SHNGANIM: return .mainMenuShiningAnimationsSpriteSet
+        }
+    }
 }
 
 
-public enum Icon: Int, Equatable {
-    case UNKNOWN = 0,
+/// Info: https://thaddeus002.github.io/fheroes2-WoT/infos/ICN_Reference.html
+/// More info: https://sourceforge.net/p/fheroes2/discussion/335992/thread/e4eeeb7b/#7197
+public enum Icon: Equatable, Hashable {
+    case mainMenuBackground
+    case randomCastle
+    case phoenix
+    case phoenixSpriteSet
+    case mainMenuButtonsSpriteSet
+    case creaturesSpriteSet
+    case mainMenuShiningAnimationsSpriteSet
+}
+
+/*
     ADVBORDE,
     ADVBORD,
     ADVBTNS,
@@ -954,3 +987,4 @@ public enum Icon: Int, Equatable {
     // IMPORTANT! Put any new entry just above this one.
     LASTICN
 }
+*/

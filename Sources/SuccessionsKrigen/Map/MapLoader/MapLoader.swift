@@ -95,9 +95,9 @@ public extension MapLoader {
         let mapTiles: [Map.Tile] = try dataReader.readMapTiles(worldSize: worldSize, worldWidth: width, addOns: addOns)
         mapTiles.forEach {
             let mapTileInfo = $0.info
-            switch mapTileInfo.mapObjectType {
+            switch mapTileInfo.objectType {
             case .randomTown, .randomCastle, .castle, .heroes, .sign, .bottle, .event, .sphinx, .jail:
-                objects.append(.init(objectType: mapTileInfo.mapObjectType, worldPosition: $0.worldPosition)) //[$0.worldPosition] = mapTileInfo.mapObjectType
+                objects.append(.init(objectType: mapTileInfo.objectType, worldPosition: $0.worldPosition)) //[$0.worldPosition] = mapTileInfo.objectType
                 break
             default: break
             }
@@ -196,11 +196,11 @@ private extension DataReader {
             let worldPositionX = qr.remainder
             let worldPositionY = qr.quotient
             let worldPosition: WorldPosition = .init(x: worldPositionX, y: worldPositionY)
-            let mapTileInfo = try readMapTileInfo()
+            let tileInfoWithoutAddons = try readMapTileInfo()
             
             
             // Read extra information if it's present.
-            var addOnIndex = mapTileInfo.nextAddonIndex
+            var addOnIndex = tileInfoWithoutAddons.nextAddonIndex
             
             var level1Addons = [Map.AddOn]()
             var level2Addons = [Map.AddOn]()
@@ -216,12 +216,15 @@ private extension DataReader {
                 addOnIndex = addOn.nextAddOnIndex
             }
             
+            let mapTileInfoWithAddons = Map.Tile.Info(
+                info: tileInfoWithoutAddons,
+                replacementLevel1AddOns: level1Addons,
+                replacementLevel2AddOns: level2Addons
+            )
+            
             let mapTile = Map.Tile(
                 index: worldPositionIndex,
-                info:
-                    mapTileInfo
-                    .appendingLevel1AddOns(level1Addons)
-                    .appendingLevel2AddOns(level2Addons),
+                info: mapTileInfoWithAddons,
                 worldPosition: worldPosition
             )
             mapTiles.append(mapTile)
@@ -269,7 +272,7 @@ private extension DataReader {
         case dragonCity = 0x65
         case abandonedMine = 0x67
         
-        var objectMapType: Map.Tile.Info.MapObjectType {
+        var objectMapType: Map.Tile.Info.ObjectType {
             switch self {
             case .sawmill: return .sawmill
             case .alchemyLab: return .alchemyLab
@@ -318,12 +321,12 @@ private extension DataReader {
         let flags = try readUInt8()
         let mapObjectTypeRaw = try readUInt8()
         
-        guard let mapObjectType = Map.Tile.Info.MapObjectType(rawValue: mapObjectTypeRaw) else {
+        guard let objectType = Map.Tile.Info.ObjectType(rawValue: mapObjectTypeRaw) else {
             //            fatalError("Found mapObject with value \(mapObjectTypeRaw) at tileIndex: \(tileIndex)")
             throw Map.Tile.Info.Error.unknownObjectType(mapObjectTypeRaw)
         }
-        //        if mapObjectType == .nothing {
-        //            print("Found mapObject with value \(mapObjectType.rawValue) at tileIndex: \(tileIndex)")
+        //        if objectType == .nothing {
+        //            print("Found mapObject with value \(objectType.rawValue) at tileIndex: \(tileIndex)")
         //        }
         let nextAddonIndex = try readUInt16()
         let level1ObjectUID = try readUInt32()
@@ -348,7 +351,7 @@ private extension DataReader {
             level1: level1,
             level2: level2,
             flags: .init(flags),
-            mapObjectType: mapObjectType,
+            objectType: objectType,
             nextAddonIndex: .init(nextAddonIndex),
             unique: 0,
             level1AddOns: [],
@@ -883,7 +886,7 @@ private extension DataReader {
             var isRandomCastle = false
             if let foundTile = tileFound {
                 print("ii=\(ii) found tile: \(foundTile.debugDescription)")
-                switch foundTile.info.mapObjectType {
+                switch foundTile.info.objectType {
                 case .randomTown, .randomCastle:
                     // Add random castle
                     isRandomCastle = true

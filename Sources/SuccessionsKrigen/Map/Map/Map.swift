@@ -54,7 +54,7 @@ public struct Map: Equatable {
         self.weekOfCurrent = .random()
         self.weekOfNext = .random()
         
-        if let tileForUltimateArtifact = tileList.first(where: { $0.info.mapObjectType == .randomUltimateArtifact }) {
+        if let tileForUltimateArtifact = tileList.first(where: { $0.info.objectType == .randomUltimateArtifact }) {
             self.ultimateArtifact = .init(artifact: .randomUltimate(), worldPosition: tileForUltimateArtifact.worldPosition, isFound: false)
         } else {
             self.ultimateArtifact = .init(artifact: .randomUltimate(), worldPosition: WorldPosition(x: 1, y: 1), isFound: false)

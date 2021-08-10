@@ -24,7 +24,7 @@ public extension Map.Tile {
         let flags: Int
         
         /// "mapObject"
-        let mapObjectType: Map.Tile.Info.MapObjectType
+        let objectType: Map.Tile.Info.ObjectType
         
         /// Next add-on index. Zero value means it's the last addon chunk.
         let nextAddonIndex: Int
@@ -36,13 +36,142 @@ public extension Map.Tile {
         
         //        private(set) var objectIndex: UInt8 = 255
         
+        public init(
+            tileIndex: Int,
+            level1: Map.Level,
+            level2: Map.Level,
+            flags: Int,
+            objectType: Map.Tile.Info.ObjectType,
+            nextAddonIndex: Int,
+            unique: Int = 0,
+            level1AddOns: [Map.Level.AddOn] = [],
+            level2AddOns: [Map.Level.AddOn] = []
+        ) {
+            self.tileIndex = tileIndex
+            self.level1 = level1
+            self.level2 = level2
+            self.flags = flags
+            self.objectType = objectType
+            self.nextAddonIndex = nextAddonIndex
+            self.unique = unique
+            self.level1AddOns = level1AddOns
+            self.level2AddOns = level2AddOns
+        }
+        
+    }
+}
+
+// MARK: Initializers
+public extension Map.Tile.Info {
+    
+    init(info: Self, overridingUnique: Int) {
+        self.init(
+            info: info,
+            
+            overriding: (
+                tileIndex: nil,
+                level1: nil,
+                level2: nil,
+                flags: nil,
+                objectType: nil,
+                nextAddonIndex: nil,
+                unique: overridingUnique,
+                level1AddOns: nil,
+                level2AddOns: nil
+            )
+        )
+    }
+    
+    init(
+        info: Self,
+        replacementLevel1AddOns: [Map.AddOn],
+        replacementLevel2AddOns: [Map.AddOn]
+    ) {
+        self.init(
+            tileIndex: info.tileIndex,
+            level1: info.level1,
+            level2: info.level2,
+            flags: info.flags,
+            objectType: info.objectType,
+            nextAddonIndex: info.nextAddonIndex,
+            unique: info.unique,
+            level1AddOns: replacementLevel1AddOns.compactMap { (addOn: Map.AddOn) -> Map.Level.AddOn? in
+                /*
+                 void Maps::Tiles::AddonsPushLevel1( const MP2::mp2addon_t & ma )
+                 {
+                 if ( ma.objectNameN1 && ma.indexNameN1 < 0xFF ) {
+                 addons_level1.emplace_back( ma.quantityN, ma.level1ObjectUID, ma.objectNameN1, ma.indexNameN1 );
+                 }
+                 }
+                 */
+                guard addOn.level1.object > 0 && addOn.level1.index < 0xFF else { return nil }
+                return Map.Level.AddOn(
+                    level: addOn.quantityN,
+                    unique: addOn.level1.uid,
+                    object: addOn.level1.object,
+                    index: addOn.level1.index
+                )
+            },
+            
+            /*
+             void Maps::Tiles::AddonsPushLevel2( const MP2::mp2addon_t & ma )
+             {
+             if ( ma.objectNameN2 && ma.indexNameN2 < 0xFF ) {
+             addons_level2.emplace_back( ma.quantityN, ma.level2ObjectUID, ma.objectNameN2, ma.indexNameN2 );
+             }
+             }
+             */
+            level2AddOns: replacementLevel2AddOns.compactMap { (addOn: Map.AddOn) -> Map.Level.AddOn? in
+                guard addOn.level2.object > 0 && addOn.level2.index < 0xFF else { return nil }
+                return Map.Level.AddOn(
+                    level: addOn.quantityN,
+                    unique: addOn.level2.uid,
+                    object: addOn.level2.object,
+                    index: addOn.level2.index
+                )
+            }
+        )
+    }
+    
+}
+private extension Map.Tile.Info {
+    
+    init(
+        info: Self,
+        overriding maybeOverriding: (
+            tileIndex: Int?,
+            level1: Map.Level?,
+            level2: Map.Level?,
+            flags: Int?,
+            objectType: Map.Tile.Info.ObjectType?,
+            nextAddonIndex: Int?,
+            unique: Int?,
+            level1AddOns: [Map.Level.AddOn]?,
+            level2AddOns: [Map.Level.AddOn]?
+        )?
+    ) {
+        guard let overriding = maybeOverriding else {
+            self.init(info: info, replacementLevel1AddOns: [], replacementLevel2AddOns: [])
+            return
+        }
+        self.init(
+            tileIndex: overriding.tileIndex ?? info.tileIndex,
+            level1: overriding.level1 ?? info.level1,
+            level2: overriding.level2 ?? info.level2,
+            flags: overriding.flags ?? info.flags,
+            objectType: overriding.objectType ?? info.objectType,
+            nextAddonIndex: overriding.nextAddonIndex ?? info.nextAddonIndex,
+            unique: overriding.unique ?? info.unique,
+            level1AddOns: overriding.level1AddOns ?? info.level1AddOns,
+            level2AddOns: overriding.level2AddOns ?? info.level2AddOns
+        )
     }
 }
 
 // MARK: Error
 public extension Map.Tile.Info {
     enum Error: Swift.Error {
-        case unknownObjectType(Map.Tile.Info.MapObjectType.RawValue)
+        case unknownObjectType(Map.Tile.Info.ObjectType.RawValue)
     }
 }
 
@@ -54,20 +183,5 @@ public extension Map.Tile.Info {
     
     /// Used as a part of quantity, field size is actually 13 bits. Has most significant bits
     var quantity2: Int { level2.quantity! }
-    
-    func appendingLevel1AddOns(_ level1AddOns: [Map.AddOn]) -> Self {
-//        var copy = self
-//        copy.level1AddOns = level1AddOns
-//        return copy
-        fatalError()
-    }
-    
-    func appendingLevel2AddOns(_ level2AddOns: [Map.AddOn]) -> Self {
-        fatalError()
-//        var copy = self
-//        copy.level2AddOns = level2AddOns
-//        return copy
-    }
-    
     
 }

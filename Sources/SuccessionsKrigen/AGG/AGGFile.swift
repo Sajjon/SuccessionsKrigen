@@ -26,7 +26,7 @@ public struct AGGFile {
     
     public final class SpriteCache {
         // "__icnVsSprite"
-        fileprivate var sprites: [[Sprite]] = .init(repeating: [], count: 906) // there are 906 different ICONs, see `ICN::LASTICN`
+        fileprivate var sprites: [String: [Sprite]] = [:]
     }
     
     public typealias FileMetadata = (fileSize: Int, fileOffset: Int)
@@ -438,19 +438,19 @@ public extension AGGFile.SpriteCache {
     }
     
     func spriteCount(icon: Icon) -> Int {
-        sprites[icon.rawValue].count
+        sprites[icon.rawValue]?.count ?? 0
     }
     
     func spriteFor(icon: Icon, creature: Creature) -> Sprite {
-        sprites[icon.rawValue][creature.rawValue]
+        sprites[icon.rawValue]![creature.rawValue]
     }
     
     func _spriteFor(icon: Icon, index: Int) -> Sprite {
-        sprites[icon.rawValue][index]
+        sprites[icon.rawValue]![index]
     }
     
     func _spritesFor(icon: Icon) -> [Sprite] {
-        sprites[icon.rawValue]
+        sprites[icon.rawValue]!
     }
     
     func add(sprites: [Sprite], forIcon icon: Icon) {
@@ -653,11 +653,11 @@ private extension AGGFile {
     /// "LoadModifiedICN"
     func loadModified(icon: Icon) -> Bool {
         switch icon {
-        case .PHOENIX:
-            fatalError("Todo Phoenix")
-        case .MONH0028: // also Phoenix
-            fatalError("Todo Phoenix")
-        case .MONS32:
+        case .phoenix:
+            fatalError("Todo Phoenix small")
+        case .phoenixSpriteSet:
+            fatalError("Todo Phoenix sprite set")
+        case .creaturesSpriteSet:
             let spritesCount = spriteCache.spriteCount(icon: icon)
             if spritesCount > 4 { // Veteran Pikeman, Master Swordsman, Champion
                 fatalError("Do stuff")
@@ -685,7 +685,7 @@ private extension AGGFile {
     
     /// "IsScalableICN"
     func isScalable(icon: Icon) -> Bool {
-        return icon == .HEROES || icon == .BTNSHNGL || icon == .SHNGANIM
+        return icon == .mainMenuBackground || icon == .mainMenuButtonsSpriteSet || icon == .mainMenuShiningAnimationsSpriteSet
     }
     
     /// "GetScaledICN"
@@ -749,6 +749,6 @@ public extension AGGFile {
     }
     
     func spriteFor(creature: Creature) throws -> Sprite {
-        try spriteFor(icon: .allCreatures, creature: creature)
+        try spriteFor(icon: .creaturesSpriteSet, creature: creature)
     }
 }

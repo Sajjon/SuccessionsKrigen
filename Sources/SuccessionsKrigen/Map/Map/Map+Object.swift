@@ -9,7 +9,7 @@ import Foundation
 
 public extension Map {
     struct Object: Equatable {
-        let objectType: Map.Tile.Info.MapObjectType
+        let objectType: Map.Tile.Info.ObjectType
         let worldPosition: WorldPosition
     }
 }
