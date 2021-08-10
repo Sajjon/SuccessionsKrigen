@@ -477,14 +477,28 @@ private extension DataReader {
         )
     }
 }
+
+private extension Map.Color {
+    init(id: UInt8) {
+        switch id {
+        case 0: self = .blue
+        case 1: self = .green
+        case 2: self = .red
+        case 3: self = .yellow
+        case 4: self = .orange
+        case 5: self = .purple
+        default: self = .none
+        }
+    }
+}
+
  
 // MARK: Read Map.Castle
 private extension DataReader {
     func readCastle(simpleCastle: Map.Castle.Simple, difficulty: Map.Difficulty) throws -> Map.Castle {
-        let colorRaw = try readUInt8()
-        guard let color = Map.Color(rawValue: colorRaw) else {
-            fatalError("Invalid color, got raw: \(colorRaw)")
-        }
+        print("🔮 READING CASTLE")
+        let colorId = try readUInt8()
+        let color = Map.Color(id: colorId)
         let hasCustomBuilding = try readUInt8() > 0
         var buildings: UInt32 = 0
         if hasCustomBuilding {
