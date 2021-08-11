@@ -108,5 +108,11 @@ final class SuccessionsKrigenTests: XCTestCase {
         ])
         
         XCTAssertNil(mapMetaData.expansionPack)
+        
+        XCTAssertEqual(map.eventsDay.first!.resources, nil)
+        XCTAssertEqual(map.eventsDay.first!.allowComputer, false)
+        XCTAssertEqual(map.eventsDay.first!.dayOfFirstOccurent, 1)
+        XCTAssertEqual(map.eventsDay.first!.subsequentOccurrences, 0)
+        XCTAssertEqual(map.eventsDay.first!.message, "My leige, we have established a foothold (which we cannot afford to lose) and all of our Heroes have joined us. The king has made us the offer to purchase this land for 200,000 gold or we may take it by force. The local lords have been fighting and each wants to be the one that defeats us. Now all the local armies have arrived on the beach, creating a state of complete Pandemonium!")
     }
 }

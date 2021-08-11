@@ -16,3 +16,7 @@ public struct Resources: Equatable {
     let gems: Quantity
     let gold: Quantity
 }
+
+public extension Resources {
+    static let zero = Self(wood: 0, mercury: 0, ore: 0, sulfur: 0, crystal: 0, gems: 0, gold: 0)
+}

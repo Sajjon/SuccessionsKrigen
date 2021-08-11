@@ -120,7 +120,7 @@ public extension MapLoader {
         let blockCount = try dataReader.readMapBlockCount()
         
         // Castle, heroes or (events, rumors, etc)
-        var kingsdoms = [Kingdom]()
+        var kingsdoms: [Kingdom] = metaData.racesByColor.map({ Kingdom.init(color: $0.key, race: $0.value, heroes: []) })
         let castlesHeroesEventsRumorsEtc = try dataReader.readCastlesHeroesEventsRumorsEtc(
             worldBlockCount: blockCount,
             tiles: mapTiles,
@@ -646,7 +646,7 @@ private extension DataReader {
             gold: gold
         )
         
-        let artifact: Artifact? = .init(rawValue: UInt8(try readUInt16()))
+        let artifact: Artifact? = .init(rawValue: try readUInt(byteCount: 2))
         
         // allow computer
         let allowComputer = try readUInt8() != 0
@@ -765,7 +765,6 @@ private extension DataReader {
 // MARK: Read Map.EventDate
 private extension DataReader {
     func readMapEventDate() throws -> Map.EventDate {
-        
         let id = try readUInt8()
         guard id == 0x00 else {
             fatalError("unknown id")
@@ -802,7 +801,6 @@ private extension DataReader {
         try skip(byteCount: 6)
         
         
-        try skip(byteCount: 10)
         var visitableByColors: [Map.Color] = []
         if try readUInt8() != 0 {
             visitableByColors.append(.blue)
@@ -900,7 +898,7 @@ private extension DataReader {
             }
             var isRandomCastle = false
             if let foundTile = tileFound {
-                print("ii=\(ii) found tile: \(foundTile.debugDescription), currentOffset: \(offset)")
+                print("ii=\(ii), found tile: \(foundTile.debugDescription)")
                 switch foundTile.info.objectType {
                 case .randomTown, .randomCastle:
                     // Add random castle
@@ -986,9 +984,8 @@ private extension DataReader {
                     fatalError()
                 }
             } else {
-                fatalError("ii=\(ii), NOT findobject!")
                 // Other events
-                
+                print("ii=\(ii), NOT found tile")
                 
                 // Add event day
                 if  blockData.count > Self.eventByteCount - 1 && blockData[42] == 1 { // why 42?

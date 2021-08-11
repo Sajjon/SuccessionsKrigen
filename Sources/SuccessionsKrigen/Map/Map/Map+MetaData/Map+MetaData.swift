@@ -6,13 +6,23 @@
 //
 
 import Foundation
+
 public extension Map {
+    
+    typealias Colors = [Map.Color]
+    
     struct MetaData: Equatable {
         let fileName: String
         let name: String
         let description: String
         let size: Size
         let difficulty: Difficulty
+        
+        
+        let kingdomColors: Colors
+        let humanPlayableColors: Colors
+        let computerPlayableColors: Colors
+        
         let victoryCondition: VictoryCondition
         let defeatCondition: DefeatCondition?
         let computerCanWinUsingVictoryCondition: Bool

@@ -132,12 +132,16 @@ public extension MapLoader {
             description: description,
             size: size,
             difficulty: difficulty,
+            kingdomColors: kingdomColors,
+            humanPlayableColors: humanPlayableColors,
+            computerPlayableColors: computerPlayableColors,
             victoryCondition: victoryCondition,
             defeatCondition: defeatCondition,
             computerCanWinUsingVictoryCondition: computerCanWinUsingVictoryCondition,
             victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns,
             isStartingWithHeroInEachCastle: isStartingWithHeroInEachCastle,
             racesByColor: racesByColor,
+            
             expansionPack: expansionPack
         )
     }

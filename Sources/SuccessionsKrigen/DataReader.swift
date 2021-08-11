@@ -19,12 +19,10 @@ public final class DataReader {
 }
 
 
-private extension DataReader {
+internal extension DataReader {
 
-    func readUInt<U>(byteCount: Int, endianess: Endianess) throws -> U where U: FixedWidthInteger & UnsignedInteger {
+    func readUInt<U>(byteCount: Int, endianess: Endianess = .little) throws -> U where U: FixedWidthInteger & UnsignedInteger {
         let bytes = try read(byteCount: byteCount)
-
-       
         
         switch endianess {
         case .little:
@@ -40,7 +38,7 @@ private extension DataReader {
         }
     }
     
-    func readInt<I>(byteCount: Int, endianess: Endianess) throws -> I where I: FixedWidthInteger & SignedInteger {
+    func readInt<I>(byteCount: Int, endianess: Endianess = .little) throws -> I where I: FixedWidthInteger & SignedInteger {
         let bytes = try read(byteCount: byteCount)
 
         let littleEndianInt = bytes.withUnsafeBytes {
@@ -104,12 +102,6 @@ public extension DataReader {
         assert(endIndex <= source.count, "'source.count': \(source.count), but 'endIndex': \(endIndex)")
         self.offset += byteCount
         return Data(source[startIndex..<endIndex])
-        
-//
-//        let bytes =  parse(byteCount: byteCount) //source.droppedFirst(byteCount)
-////        offset += byteCount
-//        assert(droppedDataToReturn.count == byteCount)
-//        return droppedDataToReturn
     }
     
     func readInt(endianess: Endianess = .little) throws -> Int {

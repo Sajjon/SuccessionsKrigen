@@ -8,12 +8,13 @@
 import Foundation
 
 public extension Map {
-    struct Date: Equatable {
-        let day: Int
-        let week: Int
-        let month: Int
+    struct Date: Equatable, ExpressibleByIntegerLiteral {
+        public typealias IntegerLiteralType = Int
+        let day: IntegerLiteralType
+        let week: IntegerLiteralType
+        let month: IntegerLiteralType
         
-        public init(day: Int, week: Int, month: Int) {
+        public init(day: IntegerLiteralType, week: IntegerLiteralType, month: IntegerLiteralType) {
             self.day = day
             self.week = week
             self.month = month
@@ -21,6 +22,14 @@ public extension Map {
     }
 }
 
+// MARK: ExpressibleByIntegerLiteral
+public extension Map.Date {
+    init(integerLiteral daysUntilDeadline: IntegerLiteralType) {
+        self = Self.in(daysUntilDeadline, .days)
+    }
+}
+
+// MARK: DaysUntilDeadline
 public extension Map.Date {
     enum Deadline {
         case days
@@ -40,3 +49,4 @@ public extension Map.Date {
     }
     
 }
+
