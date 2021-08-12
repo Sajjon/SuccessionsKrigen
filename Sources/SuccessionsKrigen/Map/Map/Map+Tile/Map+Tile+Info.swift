@@ -8,7 +8,7 @@
 import Foundation
 
 public extension Map.Tile {
-    struct Info: Equatable {
+    struct Info: Equatable, Hashable {
         
         /// Tile index representing a type of surface: ocean, grass, snow, swamp, lava, desert, dirt, wasteland, beach.
         /// NOT to be confused with `Map.Tile`.index

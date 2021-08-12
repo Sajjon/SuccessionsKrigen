@@ -9,7 +9,7 @@ import Foundation
 
 public struct Map: Equatable {
     public let metaData: MetaData
-    let unique: Int
+    public let unique: Int
     public private(set) var tiles: Tiles
     let heroes: Heroes
     let castles: Castles

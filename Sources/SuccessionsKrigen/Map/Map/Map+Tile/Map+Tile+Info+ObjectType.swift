@@ -11,7 +11,7 @@ public extension Map.Tile.Info {
     
     /// Type of object. Most of them have two versions, one with suffix `N` which I dunno what it stands for...
     /// first bit indicates if you can interact with object
-    enum ObjectType: UInt8, Equatable {
+    enum ObjectType: UInt8, Equatable, Hashable {
         case nothing = 0x00,
              alchemyLabN = 0x01,
              skeletonN = 0x04,

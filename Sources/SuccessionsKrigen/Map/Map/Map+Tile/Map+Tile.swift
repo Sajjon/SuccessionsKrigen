@@ -14,9 +14,9 @@ public extension Map {
         public typealias Passability = Direction
         
         /// NOT to be confused with: `info.tileIndex`
-        let index: Int
-        internal private(set) var info: Info
-        let worldPosition: WorldPosition
+        public let index: Int
+        public private(set) var info: Info
+        public let worldPosition: WorldPosition
         
         internal private(set) var isRoad: Bool
         internal private(set) var level: Int

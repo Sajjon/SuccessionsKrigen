@@ -8,7 +8,7 @@
 import Foundation
 
 public extension Map.Tile {
-    struct Direction: OptionSet, CustomStringConvertible, CaseIterable {
+    struct Direction: OptionSet, CustomStringConvertible, CaseIterable, Hashable {
         
         /// In clockwise order
         public static var allCases: [Map.Tile.Direction] = [.center, .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left, .topLeft]

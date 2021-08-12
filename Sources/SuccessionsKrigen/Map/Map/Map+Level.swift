@@ -9,7 +9,7 @@ import Foundation
 
 public extension Map {
     
-    struct Level: Equatable {
+    struct Level: Equatable, Hashable {
         
         /// Last bit indicates if object is animated. Second-last controls overlay (fheroes2: "objectName")
         let object: Int
@@ -29,7 +29,7 @@ public extension Map {
 
 public extension Map.Level {
     /// Not to be confused with `Map.AddOn`
-    struct AddOn: Equatable, CustomDebugStringConvertible {
+    struct AddOn: Equatable, Hashable, CustomDebugStringConvertible {
         let level: Int
         let unique: UInt32
         let object: Int
