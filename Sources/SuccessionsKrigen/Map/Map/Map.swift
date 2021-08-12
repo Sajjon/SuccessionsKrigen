@@ -10,7 +10,7 @@ import Foundation
 public struct Map: Equatable {
     let metaData: MetaData
     let unique: Int
-    let tiles: Tiles
+    public private(set) var tiles: Tiles
     let heroes: Heroes
     let castles: Castles
     let kingdoms: Kingdoms
@@ -59,5 +59,23 @@ public struct Map: Equatable {
         } else {
             self.ultimateArtifact = .init(artifact: .randomUltimate(), worldPosition: WorldPosition(x: 1, y: 1), isFound: false)
         }
+    }
+}
+
+// MARK: Post init
+internal extension Map {
+    func process() -> Self {
+        var copy = self
+        let fixedTiles: [Map.Tile] = copy.tiles.map {
+            var fixedPreloadTile = $0.fixedPreload()
+            switch fixedPreloadTile.info.objectType {
+            case .ancientLamp:
+                fixedPreloadTile = fixedPreloadTile.updatedQuantity()
+            default: break
+            }
+            return  fixedPreloadTile
+        }
+        copy.tiles = fixedTiles
+        return copy
     }
 }

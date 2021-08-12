@@ -7,115 +7,6 @@
 
 import Foundation
 
-public extension Map.Tile {
-    struct Direction: OptionSet, CustomStringConvertible, CaseIterable {
-        
-        /// In clockwise order
-        public static var allCases: [Map.Tile.Direction] = [.center, .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left, .topLeft]
-        
-        public typealias RawValue = Int
-        public let rawValue: RawValue
-        
-        public init(rawValue: RawValue) {
-            self.rawValue = rawValue
-        }
-        
-        // In clockwise order
-        static let center       = Self(rawValue: 1 << 0)
-        static let top          = Self(rawValue: 1 << 1)
-        static let topRight     = Self(rawValue: 1 << 2)
-        static let right        = Self(rawValue: 1 << 3)
-        static let bottomRight  = Self(rawValue: 1 << 4)
-        static let bottom       = Self(rawValue: 1 << 5)
-        static let bottomLeft   = Self(rawValue: 1 << 6)
-        static let left         = Self(rawValue: 1 << 7)
-        static let topLeft      = Self(rawValue: 1 << 8)
-    }
-}
-
-// MARK: Compound direction
-public extension Map.Tile.Direction {
-    static let topRow: Self = [.topLeft, .top, .topRight]
-    static let bottomRow: Self = [.bottomLeft, .bottom, .bottomRight]
-    static let centerRow: Self = [.left, .center, .right]
-    
-    static let leftColumn: Self = [.topLeft, .left, .bottomLeft]
-    static let centerColumn: Self = [.top, .center, .bottom]
-    static let rightColumn: Self = [.topRight, .right, .bottomRight]
-    
-    static let all: Self = [.topRow, .bottomRow, .centerRow]
-    static let around: Self = [.topRow, .bottomRow, .left, .right]
-    
-    static let topRightCorner: Self = [.top, .topRight, .right]
-    static let topLeftCorner: Self = [.top, .topLeft, .left]
-    
-    static let bottomRightCorner: Self = [.bottom, .bottomRight, .right]
-    static let bottomLeftCorner: Self = [.bottom, .bottomLeft, .left]
-    
-    static let allCorners: Self = [.topRight, .bottomRight, .bottomLeft, .topLeft]
-}
-
-
-// MARK: CustomStringConvertible
-public extension Map.Tile.Direction {
-    var description: String {
-        var directions = [String]()
-        if contains(.center) {
-            directions.append("center")
-        }
-        if contains(.top) {
-            directions.append("top")
-        }
-        if contains(.topRight) {
-            directions.append("top right")
-        }
-        if contains(.right) {
-            directions.append("right")
-        }
-        if contains(.bottomRight) {
-            directions.append("bottom right")
-        }
-        if contains(.bottom) {
-            directions.append("bottom")
-        }
-        if contains(.bottomLeft) {
-            directions.append("bottom left")
-        }
-        if contains(.left) {
-            directions.append("left")
-        }
-        if contains(.topLeft) {
-            directions.append("top left")
-        }
-        return directions.joined(separator: ", ")
-    }
-}
-
-private extension Map.Tile {
-    
-    var isEmpty: Bool {
-        let isEmpty = objectTileset == 0 || objectIndex == 255 || (((level >> 1) & 1) > 0)
-        assert(info.objectType == .nothing)
-        return isEmpty
-    }
-    
-    var passability: Passability {
-        return .all
-//        if info.objectType.isActionObject {
-//            return info.objectType.actionObjectDirection
-//        }
-//
-//        if isEmpty {
-//            // No object exists. Make it fully passable.
-//            return .all
-//        }
-//
-//        // Objects have fixed passability.
-//        return [.centerRow, .bottomRow]
- 
-    }
-}
-
 
 // MARK: Tile
 public extension Map {
@@ -130,15 +21,22 @@ public extension Map {
         let isRoad: Bool
         let level: Int
         
+        private(set) var quantity1: Int
+        private(set) var quantity2: Int
+        
+        
         /// Metadata field (used for things like adventure spell ID)
         let quantity3: Int
+        
         
         // MARK: Init
         public init(
             index: Int,
-            info: Info,
             worldPosition: WorldPosition,
-            quantity3: Int = 0
+            quantity1: Int? = nil,
+            quantity2: Int? = nil,
+            quantity3: Int = 0,
+            info: Info
         ) {
             var unique = 0
             
@@ -159,6 +57,10 @@ public extension Map {
             self.worldPosition = worldPosition
             self.isRoad = (( info.level1.object >> 1 ) & 1) != 0
             self.quantity3 = quantity3
+            
+            self.quantity1 = quantity1 ?? info.quantity1
+            self.quantity2 = quantity2 ?? info.quantity2
+            
         }
     }
 }
@@ -186,9 +88,6 @@ public extension Map.Tile {
     var hasSpriteAnimation: Bool {
         objectTileset & 1 != 0
     }
-    
-    var quantity1: Int { info.level1.quantity! }
-    var quantity2: Int { info.level2.quantity! }
     
     var monsterCount: Int {
         (quantity1 << 8) | quantity2
@@ -224,29 +123,6 @@ public extension Map.Tile {
 public extension Map.Tile {
     
     var debugDescription: String {
-        /*
-         ----------------:>>>>>>>>
-         Tile index      : 163, point: (19, 4)
-         uniq            : 1176
-         mp2 object      : 177, (Random Castle)
-         tileset         : 152, (OBJNTWRD.ICN)
-         object index    : 13, (animated: 0)
-         level           : 0
-         region          : 0
-         ground          : Beach, (isRoad: 0)
-         passable        : center,top,top right,right,bottom right,bottom,bottom left,left,top left,
-         quantity 1      : 8
-         quantity 2      : 0
-         quantity 3      : 0
-         ----------------1--------
-         uniq            : 1176
-         tileset         : 144, (OBJNTWBA.ICN)
-         index           : 72
-         level           : 202, (2)
-         ----------------I--------
-         ----------------:<<<<<<<<
-         */
-        
         let addOnsLevel1String = info.level1AddOns.map {
             $0.debugString(prefix: "----------------1--------")
         }.joined(separator: "\n")
@@ -276,7 +152,8 @@ public extension Map.Tile {
         
         return """
         \n\n----------------:>>>>>>>>
-        Tile index      : \(index), point: (\(worldPosition.x), \(worldPosition.y))
+        index           : \(index), point: (\(worldPosition.x), \(worldPosition.y))
+        mp2.tileIndex:  : \(info.tileIndex)
         unique          : \(info.unique)
         mp2 object      : \(info.objectType.rawValue), (\(info.objectType)
         tileset         : \(objectTileset), (\(iconName)
@@ -285,8 +162,8 @@ public extension Map.Tile {
         region          : NOT_IMPLEMENTED
         ground          : \(ground), (isRoad: \(isRoad)
         passable        : \(passability)
-        quantity 1      : \(info.level1.quantity!)
-        quantity 2      : \(info.level2.quantity!)
+        quantity 1      : \(quantity1)
+        quantity 2      : \(quantity2)
         quantity 3      : \(quantity3)
         \(addOnsLevel1String)\(addOnsLevel2String)
         ----------------I--------
@@ -327,3 +204,72 @@ public extension Map.Tile {
     }
 
 }
+
+// MARK: Private
+
+private extension Map.Tile {
+    
+    var isEmpty: Bool {
+        let isEmpty = objectTileset == 0 || objectIndex == 255 || (((level >> 1) & 1) > 0)
+        assert(info.objectType == .nothing)
+        return isEmpty
+    }
+    
+    var passability: Passability {
+        return .all
+//        if info.objectType.isActionObject {
+//            return info.objectType.actionObjectDirection
+//        }
+//
+//        if isEmpty {
+//            // No object exists. Make it fully passable.
+//            return .all
+//        }
+//
+//        // Objects have fixed passability.
+//        return [.centerRow, .bottomRow]
+ 
+    }
+}
+
+
+// MARK: Post init
+extension Map.Tile {
+    func fixedPreload() -> Self {
+        self
+    }
+    
+    func updatedQuantity(isFirstLoad: Bool = true) -> Self {
+        var withUpdatedQuantity = self
+        switch info.objectType {
+        case .ancientLamp:
+            if isFirstLoad {
+                let minQ: UInt32 = 2
+                let maxQ: UInt32 = 4
+                var newCount: UInt32 = .random(in: minQ...maxQ)
+                #if DEBUG
+                newCount = maxQ
+                #endif
+                withUpdatedQuantity = updatedMonsterCount(newCount)
+            }
+        default: break
+        }
+        return withUpdatedQuantity
+    }
+}
+
+private extension Map.Tile {
+    func updatedMonsterCount(_ newMonsterCount: UInt32) -> Self {
+        let quantity1 = newMonsterCount >> 8
+        let quantity2 = 0x00FF & newMonsterCount
+        return Self(
+            index: index,
+            worldPosition: worldPosition,
+            quantity1: .init(quantity1),
+            quantity2: .init(quantity2),
+            quantity3: quantity3,
+            info: info
+        )
+    }
+}
+

@@ -130,7 +130,7 @@ public extension MapLoader {
             kingdoms: &kingsdoms
         )
         
-        let map = try Map(
+        let unproccesedMap = try Map(
             metaData: metaData,
             unique: unique,
             tiles: mapTiles,
@@ -143,8 +143,16 @@ public extension MapLoader {
             signEventRiddles: castlesHeroesEventsRumorsEtc.signEventRiddle
         )
         
-        return map
+        let processedMap = process(map: unproccesedMap)
+        
+        return processedMap
+        
     }
+    
+    func process(map: Map) -> Map {
+        map.process()
+    }
+    
 }
 
 // MARK: Read Map.AddOn
@@ -224,8 +232,8 @@ private extension DataReader {
             
             let mapTile = Map.Tile(
                 index: worldPositionIndex,
-                info: mapTileInfoWithAddons,
-                worldPosition: worldPosition
+                worldPosition: worldPosition,
+                info: mapTileInfoWithAddons
             )
             mapTiles.append(mapTile)
         }
@@ -328,6 +336,7 @@ private extension DataReader {
         //        if objectType == .nothing {
         //            print("Found mapObject with value \(objectType.rawValue) at tileIndex: \(tileIndex)")
         //        }
+        
         let nextAddonIndex = try readUInt16()
         let level1ObjectUID = try readUInt32()
         let level2ObjectUID = try readUInt32()
@@ -345,7 +354,7 @@ private extension DataReader {
             uid: .init(level2ObjectUID),
             quantity: .init(quantity2)
         )
-        
+                
         return .init(
             tileIndex: .init(tileIndex),
             level1: level1,

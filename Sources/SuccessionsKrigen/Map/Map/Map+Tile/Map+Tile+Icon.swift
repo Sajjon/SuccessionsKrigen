@@ -279,58 +279,61 @@ public extension Icon.Raw {
 
 
 
-extension Icon {
+public extension Icon {
+    
+    static let iconToObjectTilesetBitshiftedRightTwiceMap: [Icon: Int] = [
+        .boatSpriteSet: 06,
+        .smallMapArtifactsSpriteSet: 11,
+        .creaturesSpriteSet: 12,
+        .flagsSpriteSet: 14,
+        .heroMinitiaturesForEditor: 21,
+        .mountainsSnowTerrainElementsSpriteSet: 22,
+        .mountainsSwampTerrainElementsSpriteSet: 23,
+        .mountainsLavaTerrainElementsSpriteSet: 24,
+        .mountainsDesertTerrainElementsSpriteSet: 25,
+        .mountainsDirtTerrainElementsSpriteSet: 26,
+        .mountainsAllTerrainElementsSpriteSet: 27,
+        .mineTypesSpriteSet: 29,
+        .roadTerrainElementsSpriteSet: 30,
+        .mountainsWastelandTerrainElementsSpriteSet: 31,
+        .mountainsGrassTerrainElementsSpriteSet: 32,
+        .treesJungleTerrainElementsSpriteSet: 33,
+        .treesEvilTerrainElementsSpriteSet: 34,
+        .townMapObjectsSpriteSet: 35,
+        .castleBase: 36,
+        .castleShadowsSpriteSet: 37,
+        .randomCastle: 38,
+        .mineGuardiansElementalsSpriteSet: 39,
+        .waterObjectsSpriteSet: 40,
+        .genericMapObjectsSpriteSet2: 41,
+        .treesSnowTerrainElementsSpriteSet: 42,
+        .treesFirTerrainElementsSpriteSet: 43,
+        .treesFallTerrainElementsSpriteSet: 44,
+        .streamTerrainElementsSpriteSet: 45,
+        .resourceOnMapObjectSpriteSet: 46,
+        .grassMapObjectSpriteSet: 48,
+        .treesDeciduousTerrainElementsSpriteSet: 49,
+        .waterMapObjectSpriteSet: 50,
+        .grassTerrainObjectSpriteSet: 51,
+        .snowTerrainObjectSpriteSet: 52,
+        .swampTerrainObjectSpriteSet: 53,
+        .lavaTerrainObjectSpriteSet: 54,
+        .desertTerrainObjectSpriteSet: 55,
+        .dirtTerrainObjectSpriteSet: 56,
+        .wastelandTerrainObjectSpriteSet: 57,
+        .lavaTerrainObjectSpriteSet3: 58,
+        .genericMapObjectsSpriteSet: 59,
+        .lavaTerrainObjectSpriteSet2: 60,
+    ]
+    
     static func fromObjectTileset(_ objectTileset: Int) -> Icon? {
         let tilesetValue = objectTileset >> 2
-           
-        switch tilesetValue {
         
-        case 6: return .boatSpriteSet
-        case 11: return .smallMapArtifactsSpriteSet
-        case 12: return .creaturesSpriteSet
-        case 14: return .flagsSpriteSet
-        case 21: return .heroMinitiaturesForEditor
-        case 22: return .mountainsSnowTerrainElementsSpriteSet
-        case 23: return .mountainsSwampTerrainElementsSpriteSet
-        case 24: return .mountainsLavaTerrainElementsSpriteSet
-        case 25: return .mountainsDesertTerrainElementsSpriteSet
-        case 26: return .mountainsDirtTerrainElementsSpriteSet
-        case 27: return .mountainsAllTerrainElementsSpriteSet
-        case 29: return .mineTypesSpriteSet
-        case 30: return .roadTerrainElementsSpriteSet
-        case 31: return .mountainsWastelandTerrainElementsSpriteSet
-        case 32: return .mountainsGrassTerrainElementsSpriteSet
-        case 33: return .treesJungleTerrainElementsSpriteSet
-        case 34: return .treesEvilTerrainElementsSpriteSet
-        case 35: return .townMapObjectsSpriteSet
-        case 36: return .castleBase
-        case 37: return .castleShadowsSpriteSet
-        case 38: return .randomCastle
-        case 39: return .mineGuardiansElementalsSpriteSet
-        case 40: return .waterObjectsSpriteSet
-        case 41: return .genericMapObjectsSpriteSet2
-        case 42: return .treesSnowTerrainElementsSpriteSet
-        case 43: return .treesFirTerrainElementsSpriteSet
-        case 44: return .treesFallTerrainElementsSpriteSet
-        case 45: return .streamTerrainElementsSpriteSet
-        case 46: return .resourceOnMapObjectSpriteSet
-        case 48: return .grassMapObjectSpriteSet
-        case 49: return .treesDeciduousTerrainElementsSpriteSet
-        case 50: return .waterMapObjectSpriteSet
-        case 51: return .grassTerrainObjectSpriteSet
-        case 52: return .snowTerrainObjectSpriteSet
-        case 53: return .swampTerrainObjectSpriteSet
-        case 54: return .lavaTerrainObjectSpriteSet
-        case 55: return .desertTerrainObjectSpriteSet
-        case 56: return .dirtTerrainObjectSpriteSet
-        case 57: return .wastelandTerrainObjectSpriteSet
-        case 58: return .lavaTerrainObjectSpriteSet3
-        case 59: return .genericMapObjectsSpriteSet
-        case 60: return .lavaTerrainObjectSpriteSet2
-
-        
-        default: fatalError("not done yet: tilesetValue \(objectTileset), tilesetValue: \(tilesetValue)")
+        guard let icon = iconToObjectTilesetBitshiftedRightTwiceMap.first(where: { $0.value == tilesetValue })?.key else {
+            fatalError("not done yet: tilesetValue \(objectTileset), tilesetValue: \(tilesetValue)")
         }
+        
+        return icon
     }
 }
 
