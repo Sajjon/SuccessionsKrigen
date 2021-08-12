@@ -31,8 +31,29 @@ public extension MapLoader {
     }
 }
 
+public extension Map {
+    enum Named: String, Equatable {
+        case pandemonium
+    }
+}
+public extension Map.Named {
+    var fileName: String {
+        var name = ""
+        switch self {
+        case .pandemonium: name = "PANDAMON"
+        }
+        return "\(name).MP2"
+    }
+}
+
 // MARK: Load Map
 public extension MapLoader {
+    
+    func loadMap(named: Map.Named, inDirectory directory: String? = nil) throws -> Map {
+        let mapsPath = directory ?? "/Users/sajjon/Developer/Fun/Games/HoMM/HoMM_2_Gold_GAME_FILES/MAPS/"
+        return try loadMap(filePath: "\(mapsPath)/\(named.fileName)")
+    }
+    
     func loadMap(filePath mapFilePath: String) throws -> Map {
         guard let contentsRaw = FileManager.default.contents(atPath: mapFilePath) else {
             throw Error.fileNotFound

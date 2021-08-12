@@ -12,23 +12,23 @@ public extension Map {
     typealias Colors = [Map.Color]
     
     struct MetaData: Equatable {
-        let fileName: String
-        let name: String
-        let description: String
-        let size: Size
-        let difficulty: Difficulty
+        public let fileName: String
+        public let name: String
+        public let description: String
+        public let size: Size
+        public let difficulty: Difficulty
         
         
-        let kingdomColors: Colors
-        let humanPlayableColors: Colors
-        let computerPlayableColors: Colors
+        public let kingdomColors: Colors
+        public let humanPlayableColors: Colors
+        public let computerPlayableColors: Colors
         
-        let victoryCondition: VictoryCondition
-        let defeatCondition: DefeatCondition?
+        public let victoryCondition: VictoryCondition
+        public let defeatCondition: DefeatCondition?
         let computerCanWinUsingVictoryCondition: Bool
         let victoryCanAlsoBeAchivedByDefeatingAllEnemyHeroesAndTowns: Bool
         let isStartingWithHeroInEachCastle: Bool
-        let racesByColor: [Map.Color: Race]
+        public let racesByColor: [Map.Color: Race]
         let expansionPack: ExpansionPack?
     }
 }
