@@ -145,14 +145,19 @@ public extension MapLoader {
         
         let processedMap = process(map: unproccesedMap)
         
-        return processedMap
+        let postLoaded = postLoad(map: processedMap)
+        
+        return postLoaded
         
     }
     
     func process(map: Map) -> Map {
-        map.process()
+        map.processed()
     }
     
+    func postLoad(map: Map) -> Map {
+        map.postLoaded()
+    }
 }
 
 // MARK: Read Map.AddOn
@@ -209,7 +214,9 @@ private extension DataReader {
             
             // Read extra information if it's present.
             var addOnIndex = tileInfoWithoutAddons.nextAddonIndex
-            
+            if worldPositionIndex == 1 {
+                print("nextAddOnIndex: \(addOnIndex), tile.info: \(tileInfoWithoutAddons)")
+            }
             var level1Addons = [Map.AddOn]()
             var level2Addons = [Map.AddOn]()
             while addOnIndex > 0 {
@@ -222,6 +229,9 @@ private extension DataReader {
                 level1Addons.append(addOn)
                 level2Addons.append(addOn) // Cyon: is this correct? same AddOn added to arrays level1 and level2 ??
                 addOnIndex = addOn.nextAddOnIndex
+                if worldPositionIndex == 1 {
+                    print("\n\n\n\naddOn: \(addOn), \n\nnextAddOnIndex: \(addOnIndex)")
+                }
             }
             
             let mapTileInfoWithAddons = Map.Tile.Info(
@@ -235,7 +245,16 @@ private extension DataReader {
                 worldPosition: worldPosition,
                 info: mapTileInfoWithAddons
             )
-            mapTiles.append(mapTile)
+            
+            if worldPositionIndex == 1 {
+                print("mapTile before fix: \(mapTile.debugDescription)")
+            }
+            
+            let fixedTile = mapTile.withSortedAddonsAndVariousFixes()
+            if worldPositionIndex == 1 {
+                print("mapTile after fix: \(fixedTile.debugDescription)")
+            }
+            mapTiles.append(fixedTile)
         }
         
         return mapTiles

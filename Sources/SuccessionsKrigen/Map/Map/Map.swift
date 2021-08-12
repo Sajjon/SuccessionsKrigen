@@ -64,7 +64,7 @@ public struct Map: Equatable {
 
 // MARK: Post init
 internal extension Map {
-    func process() -> Self {
+    func processed() -> Self {
         var copy = self
         let fixedTiles: [Map.Tile] = copy.tiles.map {
             var fixedPreloadTile = $0.fixedPreload()
@@ -74,6 +74,15 @@ internal extension Map {
             default: break
             }
             return  fixedPreloadTile
+        }
+        copy.tiles = fixedTiles
+        return copy
+    }
+    
+    func postLoaded() -> Self {
+        var copy = self
+        let fixedTiles: [Map.Tile] = copy.tiles.map {
+            $0.updatedPassability(mapSize: metaData.size)
         }
         copy.tiles = fixedTiles
         return copy

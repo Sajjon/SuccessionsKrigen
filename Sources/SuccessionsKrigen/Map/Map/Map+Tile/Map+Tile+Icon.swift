@@ -12,7 +12,10 @@ import Foundation
 public enum Icon: Equatable, Hashable {
     case mainMenuBackground
     case randomCastle
+    
+    /// "OBJNTWBA"
     case castleBase
+    
     case phoenix
     case phoenixSpriteSet
     case mainMenuButtonsSpriteSet
@@ -34,14 +37,20 @@ public enum Icon: Equatable, Hashable {
     case mountainsDirtTerrainElementsSpriteSet
     case mountainsAllTerrainElementsSpriteSet
     case mineTypesSpriteSet
+    
+    /// "ROAD"
     case roadTerrainElementsSpriteSet
+    
     case treesJungleTerrainElementsSpriteSet
     case treesEvilTerrainElementsSpriteSet
     case treesSnowTerrainElementsSpriteSet
     case treesFirTerrainElementsSpriteSet
     case treesDeciduousTerrainElementsSpriteSet
     case treesFallTerrainElementsSpriteSet
+    
+    /// "OBJNTOWN"
     case townMapObjectsSpriteSet
+    
     case castleShadowsSpriteSet
     case mineGuardiansElementalsSpriteSet
     case waterObjectsSpriteSet

@@ -126,7 +126,7 @@ final class SuccessionsKrigenTests: XCTestCase {
                 objectIndex: 15, isAnimated: false,
                 level: 0,
                 region: 8,
-                ground: .beach,
+                ground: .beach, isRoad: false,
                 passable: [.center, .right, .bottomRight, .bottom],
                 quantity1: 0,
                 quantity2: 4,
@@ -142,6 +142,49 @@ final class SuccessionsKrigenTests: XCTestCase {
         }
         )
         
+
+        doAssertTile(at: 1, expectedTile: {
+            .expected(
+                index: $0, point: .init(x: 1, y: 0),
+                mp2TileIndex: 419,
+                uniq: 2340,
+                mp2Object: .trees,
+                tileset: 196, tilesetIcon: .TREDECI,
+                objectIndex: 33, isAnimated: false,
+                level: 0,
+                region: 0,
+                ground: .beach, isRoad: false,
+                passable: nil,
+                quantity1: 2,
+                quantity2: 0,
+                level1Addons: [
+                    .expected(
+                        uniq: 2337,
+                        tileset: 196, tilesetIcon: .TREDECI,
+                        index: 20,
+                        level: (2, 2)
+                    ),
+                    .expected(
+                        uniq: 2338,
+                        tileset: 196, tilesetIcon: .TREDECI,
+                        index: 26,
+                        level: (202, 2)
+                    )
+                ],
+                level2Addons: [
+                    .expected(
+                        uniq: 2342,
+                        tileset: 220, tilesetIcon: .OBJNDSRT,
+                        index: 7,
+                        level: (2, 2)
+                    )
+                ]
+            )
+        }
+        )
+        
+        
+        
         doAssertTile(at: 163, expectedTile: {
             .expected(
                 index: $0, point: .init(x: 19, y: 4),
@@ -152,7 +195,7 @@ final class SuccessionsKrigenTests: XCTestCase {
                 objectIndex: 13, isAnimated: false,
                 level: 0,
                 region: 0,
-                ground: .beach,
+                ground: .beach, isRoad: false,
                 passable: .all,
                 quantity1: 8,
                 quantity2: 0,
@@ -177,23 +220,12 @@ final class SuccessionsKrigenTests: XCTestCase {
 }
 
 private extension Map.Tile {
-    /*
-     /// NOT to be confused with: `info.tileIndex`
-     let index: Int
-     let info: Info
-     let worldPosition: WorldPosition
-     
-     let isRoad: Bool
-     let level: Int
-     
-     /// Metadata field (used for things like adventure spell ID)
-     let quantity3: Int
-     */
+
     static func expected(
         index: Int,
         point: Point,
         mp2TileIndex tileIndex: Int,
-        uniq: Int,
+        uniq: UInt32,
         mp2Object: Map.Tile.Info.ObjectType,
         tileset: Int,
         tilesetIcon: Icon.Raw,
@@ -201,8 +233,8 @@ private extension Map.Tile {
         isAnimated: Bool,
         level: Int,
         region: Int,
-        ground: Ground,
-        passable: Passability,
+        ground: Ground, isRoad: Bool,
+        passable: Passability?,
         quantity1: Int,
         quantity2: Int,
         quantity3: Int = 0,
@@ -213,7 +245,7 @@ private extension Map.Tile {
         precondition(iconFromTileset.raw == tilesetIcon)
         
         
-        return Self.init(
+        let tile = Self(
             index: index,
             worldPosition: point,
             quantity3: quantity3,
@@ -224,7 +256,7 @@ private extension Map.Tile {
                 level1: .init(
                     object: tileset,
                     index: .init(infoLevel1Index),
-                    uid: .dontKnowAndWontAssert,
+                    uid: uniq,
                     quantity: quantity1
                 ),
                 
@@ -236,11 +268,17 @@ private extension Map.Tile {
                 ),
                 
                 flags: .dontKnowAndWontAssert,
-                objectType: mp2Object, nextAddonIndex: .dontKnowAndWontAssert, unique: uniq,
+                objectType: mp2Object,
+                nextAddonIndex: .dontKnowAndWontAssert,
+                unique: uniq,
                 level1AddOns: level1Addons,
                 level2AddOns: level2Addons
             )
         )
+        
+        assert(tile.isRoad == isRoad)
+        
+        return tile
     }
 }
 
@@ -249,7 +287,7 @@ private extension Map.Tile {
 private extension Map.Level.AddOn {
     
     static func expected(
-        uniq: Int,
+        uniq: UInt32,
         tileset object: Int,
         tilesetIcon: Icon.Raw,
         index: Int,
@@ -263,5 +301,9 @@ private extension Map.Level.AddOn {
 }
 
 private extension Int {
-    static let dontKnowAndWontAssert = -1
+    static let dontKnowAndWontAssert: Self = -1
+}
+
+private extension UInt32 {
+    static let dontKnowAndWontAssert: Self = 0
 }
